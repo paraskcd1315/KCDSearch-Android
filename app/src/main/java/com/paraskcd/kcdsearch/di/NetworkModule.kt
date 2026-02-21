@@ -1,6 +1,6 @@
 package com.paraskcd.kcdsearch.di
 
-import com.paraskcd.kcdsearch.constants.GlobalConstants
+import com.paraskcd.kcdsearch.constants.SearchApiConstants
 import com.paraskcd.kcdsearch.data.api.autocomplete.AutocompleteApi
 import com.paraskcd.kcdsearch.data.api.search.SearchApi
 import dagger.Module
@@ -27,7 +27,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit = Retrofit.Builder()
-        .baseUrl(GlobalConstants.BASE_URL)
+        .baseUrl(SearchApiConstants.BASE_URL)
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()
