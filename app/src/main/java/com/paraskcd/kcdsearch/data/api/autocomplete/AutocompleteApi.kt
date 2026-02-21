@@ -8,5 +8,5 @@ interface AutocompleteApi {
     @GET(GlobalConstants.AUTOCOMPLETE_API_PATH)
     suspend fun autocomplete(
         @Query("q") query: String,
-    ): List<String>
+    ): List<Any>
 }
