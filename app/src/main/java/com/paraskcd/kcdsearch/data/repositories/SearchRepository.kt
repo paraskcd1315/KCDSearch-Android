@@ -1,5 +1,7 @@
 package com.paraskcd.kcdsearch.data.repositories
 
+import android.util.Log
+import com.google.gson.JsonPrimitive
 import com.paraskcd.kcdsearch.data.api.autocomplete.AutocompleteApi
 import com.paraskcd.kcdsearch.data.api.search.SearchApi
 import com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult.SearchResultResponse
@@ -31,11 +33,24 @@ class SearchRepository @Inject constructor(
     suspend fun autocomplete(query: String): Result<List<String>> = withContext(Dispatchers.IO) {
         runCatching {
             val raw = autocompleteApi.autocomplete(query)
+            Log.d("SuggestionsApi", raw.toString())
             when {
-                raw.size == 2 && raw[1] is List<*> ->
-                    (raw[1] as List<*>).filterIsInstance<String>()
-                else ->
-                    raw.filterIsInstance<String>()
+                raw.size == 2 && raw[1] is List<*> -> {
+                    (raw[1] as List<*>).mapNotNull { element ->
+                        when (element) {
+                            is String -> element
+                            is JsonPrimitive -> element.takeIf { it.isString }?.asString
+                            else -> element?.toString()
+                        }
+                    }
+                }
+                else -> raw.mapNotNull { element ->
+                    when (element) {
+                        is String -> element
+                        is JsonPrimitive -> element.takeIf { it.isString }?.asString
+                        else -> element.toString()
+                    }
+                }
             }
         }
     }

@@ -3,7 +3,9 @@ package com.paraskcd.kcdsearch.services
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class SearchQueryService @Inject constructor() {
     private val _query = MutableStateFlow("")
     val query = _query.asStateFlow()

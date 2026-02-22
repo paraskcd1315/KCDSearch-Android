@@ -2,15 +2,18 @@ package com.paraskcd.kcdsearch.utils
 
 import kotlinx.coroutines.flow.MutableStateFlow
 
-suspend fun <T> withLoading(
+suspend fun withLoading(
     isLoading: MutableStateFlow<Boolean>,
     error: MutableStateFlow<Throwable?>,
-    block: suspend () -> Result<T>,
-): Result<T> {
+    block: suspend () -> Unit,
+) {
     isLoading.value = true
     error.value = null
-    val result = block()
-    isLoading.value = false
-    result.onFailure { error.value = it }
-    return result
+    try {
+        block()
+    } catch (e: Throwable) {
+        error.value = e
+    } finally {
+        isLoading.value = false
+    }
 }

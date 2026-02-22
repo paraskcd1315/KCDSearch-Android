@@ -1,5 +1,6 @@
 package com.paraskcd.kcdsearch.services
 
+import android.util.Log
 import com.paraskcd.kcdsearch.data.api.apps.dataSources.AppResult
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -58,29 +59,36 @@ class SearchService @Inject constructor(
             val appItems = appSearchRepository.search(AppSearchRequestDto(query = q, category = null))
 
             webResult.onSuccess { applyWebPageResponse(it, isFirstPage = true) }
+            webResult.onFailure { _error.value = it }
             _appResults.value = appItems
-
             updateUnifiedResults()
-            webResult
         }
     }
 
     suspend fun loadNextPage() {
-        if (!canLoadMore()) return
+        if (!canLoadMore()) {
+            return
+        }
         withLoading(_isLoading, _error) {
             val result = searchRepository.search(
                 SearchRequestDto(query = searchQueryService.query.value.trim(), pageno = _currentPage.value + 1),
             )
-
             result.onSuccess { applyWebPageResponse(it, isFirstPage = false) }
+            result.onFailure { _error.value = it }
             updateUnifiedResults()
-
-            result
         }
     }
 
-    suspend fun getAutocompleteSuggestions(query: String): List<String> =
-        searchRepository.autocomplete(query.trim()).getOrElse { emptyList() }
+    suspend fun getAutocompleteSuggestions(): List<String> {
+        val query = searchQueryService.query.value.trim()
+        if (query.length <= 2) {
+            return emptyList()
+        }
+
+        Log.d("SuggestionsService", query)
+
+        return searchRepository.autocomplete(searchQueryService.query.value.trim()).getOrElse { emptyList() }
+    }
 
     fun clear() {
         searchQueryService.clearQuery()
@@ -107,8 +115,13 @@ class SearchService @Inject constructor(
             _webResults.value = _webResults.value + response.results
             _currentPage.value = _currentPage.value + 1
         }
+
         _totalResults.value = response.numberOfResults
-        if (response.infoboxes.isNotEmpty()) _infoboxes.value = response.infoboxes
+
+        if (response.infoboxes.isNotEmpty()) {
+            _infoboxes.value = response.infoboxes
+        }
+
         _hasMorePages.value = response.results.isNotEmpty()
         _error.value = null
     }

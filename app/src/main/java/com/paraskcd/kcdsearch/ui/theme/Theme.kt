@@ -35,8 +35,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun KCDSearchTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
+    darkTheme: Boolean = true,
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
