@@ -1,7 +1,7 @@
 package com.paraskcd.kcdsearch.data.api.apps
 
-import com.paraskcd.kcdsearch.data.api.apps.dataSources.AppItem
+import com.paraskcd.kcdsearch.data.api.apps.dataSources.AppResult
 
 interface InstalledAppsApi {
-    fun getInstalledApps(): List<AppItem>
+    fun getInstalledApps(): List<AppResult>
 }

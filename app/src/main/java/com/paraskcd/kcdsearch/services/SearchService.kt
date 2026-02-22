@@ -1,5 +1,6 @@
 package com.paraskcd.kcdsearch.services
 
+import com.paraskcd.kcdsearch.data.api.apps.dataSources.AppResult
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,15 +9,22 @@ import com.paraskcd.kcdsearch.data.repositories.SearchRepository
 import com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult.SearchResult
 import com.paraskcd.kcdsearch.data.api.search.dataSources.infobox.Infobox
 import com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult.SearchResultResponse
+import com.paraskcd.kcdsearch.data.dtos.AppSearchRequestDto
 import com.paraskcd.kcdsearch.data.dtos.SearchRequestDto
+import com.paraskcd.kcdsearch.data.repositories.AppSearchRepository
+import com.paraskcd.kcdsearch.model.UnifiedSearchResult
 import com.paraskcd.kcdsearch.utils.withLoading
 
 @Singleton
 class SearchService @Inject constructor(
     private val searchQueryService: SearchQueryService,
     private val searchRepository: SearchRepository,
+    private val appSearchRepository: AppSearchRepository,
 ) {
-    private val _results = MutableStateFlow<List<SearchResult>>(emptyList())
+    private val _webResults = MutableStateFlow<List<SearchResult>>(emptyList())
+    private val _appResults = MutableStateFlow<List<AppResult>>(emptyList())
+
+    private val _results = MutableStateFlow<List<UnifiedSearchResult>>(emptyList())
     val results = _results.asStateFlow()
 
     private val _infoboxes = MutableStateFlow<List<Infobox>>(emptyList())
@@ -40,14 +48,35 @@ class SearchService @Inject constructor(
     suspend fun search(query: String) {
         searchQueryService.setQuery(query)
         resetPagination()
-        if (searchQueryService.query.value.isBlank()) return
-        withLoading(_isLoading, _error) { fetchPage(1) }.onSuccess { applyPageResponse(it, isFirstPage = true) }
+        val q = searchQueryService.query.value.trim()
+        if (q.isBlank()) {
+            updateUnifiedResults()
+            return
+        }
+        withLoading(_isLoading, _error) {
+            val webResult = searchRepository.search(SearchRequestDto(query = q, pageno = 1))
+            val appItems = appSearchRepository.search(AppSearchRequestDto(query = q, category = null))
+
+            webResult.onSuccess { applyWebPageResponse(it, isFirstPage = true) }
+            _appResults.value = appItems
+
+            updateUnifiedResults()
+            webResult
+        }
     }
 
     suspend fun loadNextPage() {
         if (!canLoadMore()) return
-        withLoading(_isLoading, _error) { fetchPage(_currentPage.value + 1) }
-            .onSuccess { applyPageResponse(it, isFirstPage = false) }
+        withLoading(_isLoading, _error) {
+            val result = searchRepository.search(
+                SearchRequestDto(query = searchQueryService.query.value.trim(), pageno = _currentPage.value + 1),
+            )
+
+            result.onSuccess { applyWebPageResponse(it, isFirstPage = false) }
+            updateUnifiedResults()
+
+            result
+        }
     }
 
     suspend fun getAutocompleteSuggestions(query: String): List<String> =
@@ -60,28 +89,32 @@ class SearchService @Inject constructor(
 
     private fun resetPagination() {
         _currentPage.value = 1
-        _results.value = emptyList()
+        _webResults.value = emptyList()
+        _appResults.value = emptyList()
         _infoboxes.value = emptyList()
         _totalResults.value = 0
         _hasMorePages.value = true
         _error.value = null
+
+        updateUnifiedResults()
     }
 
-    private suspend fun fetchPage(pageno: Int): Result<SearchResultResponse> =
-        searchRepository.search(SearchRequestDto(query = searchQueryService.query.value.trim(), pageno = pageno))
-
-    private fun applyPageResponse(response: SearchResultResponse, isFirstPage: Boolean) {
+    private fun applyWebPageResponse(response: SearchResultResponse, isFirstPage: Boolean) {
         if (isFirstPage) {
-            _results.value = response.results
+            _webResults.value = response.results
             _currentPage.value = 1
         } else {
-            _results.value += response.results
-            _currentPage.value += 1
+            _webResults.value = _webResults.value + response.results
+            _currentPage.value = _currentPage.value + 1
         }
         _totalResults.value = response.numberOfResults
         if (response.infoboxes.isNotEmpty()) _infoboxes.value = response.infoboxes
         _hasMorePages.value = response.results.isNotEmpty()
         _error.value = null
+    }
+
+    private fun updateUnifiedResults() {
+        _results.value = _appResults.value.map { UnifiedSearchResult.App(it) } + _webResults.value.map { UnifiedSearchResult.Web(it) }
     }
 
     private fun canLoadMore(): Boolean =
