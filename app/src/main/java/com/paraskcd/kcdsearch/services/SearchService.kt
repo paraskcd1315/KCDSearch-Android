@@ -15,6 +15,8 @@ import com.paraskcd.kcdsearch.data.dtos.SearchRequestDto
 import com.paraskcd.kcdsearch.data.repositories.AppSearchRepository
 import com.paraskcd.kcdsearch.model.UnifiedSearchResult
 import com.paraskcd.kcdsearch.utils.withLoading
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 @Singleton
 class SearchService @Inject constructor(
@@ -55,13 +57,19 @@ class SearchService @Inject constructor(
             return
         }
         withLoading(_isLoading, _error) {
-            val webResult = searchRepository.search(SearchRequestDto(query = q, pageno = 1))
-            val appItems = appSearchRepository.search(AppSearchRequestDto(query = q, category = null))
-
-            webResult.onSuccess { applyWebPageResponse(it, isFirstPage = true) }
-            webResult.onFailure { _error.value = it }
-            _appResults.value = appItems
-            updateUnifiedResults()
+            coroutineScope {
+                launch {
+                    val appItems = appSearchRepository.search(AppSearchRequestDto(query = q, category = null))
+                    _appResults.value = appItems
+                    updateUnifiedResults()
+                }
+                launch {
+                    val webResult = searchRepository.search(SearchRequestDto(query = q, pageno = 1))
+                    webResult.onSuccess { applyWebPageResponse(it, isFirstPage = true) }
+                    webResult.onFailure { _error.value = it }
+                    updateUnifiedResults()
+                }
+            }
         }
     }
 
@@ -70,11 +78,11 @@ class SearchService @Inject constructor(
             return
         }
         withLoading(_isLoading, _error) {
-            val result = searchRepository.search(
+            val webResult = searchRepository.search(
                 SearchRequestDto(query = searchQueryService.query.value.trim(), pageno = _currentPage.value + 1),
             )
-            result.onSuccess { applyWebPageResponse(it, isFirstPage = false) }
-            result.onFailure { _error.value = it }
+            webResult.onSuccess { applyWebPageResponse(it, isFirstPage = false) }
+            webResult.onFailure { _error.value = it }
             updateUnifiedResults()
         }
     }
