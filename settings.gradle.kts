@@ -24,4 +24,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "KCD Search"
 include(":app")
- 

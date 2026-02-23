@@ -17,3 +17,20 @@ suspend fun withLoading(
         isLoading.value = false
     }
 }
+
+suspend fun <T> withLoadingResult(
+    isLoading: MutableStateFlow<Boolean>,
+    error: MutableStateFlow<Throwable?>,
+    block: suspend () -> T,
+): T {
+    isLoading.value = true
+    error.value = null
+    try {
+        return block()
+    } catch (e: Throwable) {
+        error.value = e
+        throw e
+    } finally {
+        isLoading.value = false
+    }
+}

@@ -1,22 +1,22 @@
 package com.paraskcd.kcdsearch.services
 
-import android.util.Log
 import com.paraskcd.kcdsearch.data.api.apps.dataSources.AppResult
-import javax.inject.Inject
-import javax.inject.Singleton
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import com.paraskcd.kcdsearch.data.repositories.SearchRepository
-import com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult.SearchResult
 import com.paraskcd.kcdsearch.data.api.search.dataSources.infobox.Infobox
+import com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult.SearchResult
 import com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult.SearchResultResponse
 import com.paraskcd.kcdsearch.data.dtos.AppSearchRequestDto
 import com.paraskcd.kcdsearch.data.dtos.SearchRequestDto
 import com.paraskcd.kcdsearch.data.repositories.AppSearchRepository
+import com.paraskcd.kcdsearch.data.repositories.SearchRepository
 import com.paraskcd.kcdsearch.model.UnifiedSearchResult
 import com.paraskcd.kcdsearch.utils.withLoading
+import com.paraskcd.kcdsearch.utils.withLoadingResult
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Singleton
 class SearchService @Inject constructor(
@@ -42,11 +42,17 @@ class SearchService @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
+    private val _isAutocompleteLoading = MutableStateFlow(false)
+    val isAutocompleteLoading = _isAutocompleteLoading.asStateFlow()
+
     private val _hasMorePages = MutableStateFlow(true)
     val hasMorePages = _hasMorePages.asStateFlow()
 
     private val _error = MutableStateFlow<Throwable?>(null)
     val error = _error.asStateFlow()
+
+    private val _autocompleteErrors = MutableStateFlow<Throwable?>(null)
+    val autocompleteErrors = _autocompleteErrors.asStateFlow()
 
     suspend fun search(query: String) {
         searchQueryService.setQuery(query)
@@ -89,13 +95,10 @@ class SearchService @Inject constructor(
 
     suspend fun getAutocompleteSuggestions(): List<String> {
         val query = searchQueryService.query.value.trim()
-        if (query.length <= 2) {
-            return emptyList()
+        if (query.length <= 2) return emptyList()
+        return withLoadingResult(_isAutocompleteLoading, _autocompleteErrors) {
+            searchRepository.autocomplete(query).getOrElse { emptyList() }
         }
-
-        Log.d("SuggestionsService", query)
-
-        return searchRepository.autocomplete(searchQueryService.query.value.trim()).getOrElse { emptyList() }
     }
 
     fun clear() {

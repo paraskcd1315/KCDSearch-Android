@@ -13,6 +13,7 @@ data class UnifiedSearchBarParams(
     val scope: CoroutineScope,
     val modifier: Modifier = Modifier,
     val placeholder: String = "Search...",
+    val isLoading: Boolean = false,
     val suggestions: List<String> = emptyList(),
     val onSuggestionClick: (String) -> Unit = {},
 )

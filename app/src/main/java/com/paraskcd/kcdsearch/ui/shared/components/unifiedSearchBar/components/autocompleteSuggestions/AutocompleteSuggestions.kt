@@ -26,9 +26,9 @@ fun AutocompleteSuggestions(
             ListItem(
                 headlineContent = { Text(suggestion) },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { params.onSuggestionClick(suggestion) }
+                modifier = Modifier.autocompleteSuggestionDefault(
+                    onClick = { params.onSuggestionClick(suggestion) }
+                )
             )
         }
     }

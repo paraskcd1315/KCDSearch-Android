@@ -20,6 +20,7 @@ class HomeViewModel @Inject constructor(
     private val searchService: SearchService
 ): ViewModel() {
     val query: StateFlow<String> = searchQueryService.query
+    val isLoading: StateFlow<Boolean> = searchService.isAutocompleteLoading
 
     private val _suggestions = MutableStateFlow<List<String>>(emptyList())
     val suggestions: StateFlow<List<String>> = _suggestions.asStateFlow()
