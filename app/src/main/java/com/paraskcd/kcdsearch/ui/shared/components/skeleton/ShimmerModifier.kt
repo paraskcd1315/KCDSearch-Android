@@ -1,4 +1,4 @@
-package com.paraskcd.kcdsearch.ui.shared.modifiers
+package com.paraskcd.kcdsearch.ui.shared.components.skeleton
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode

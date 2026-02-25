@@ -1,9 +1,13 @@
 package com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar
 
 import android.view.View
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import android.view.ViewParent
+import android.view.Window
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -16,11 +20,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.view.WindowCompat
+import com.paraskcd.kcdsearch.ui.shared.components.skeleton.Skeleton
+import com.paraskcd.kcdsearch.ui.shared.components.skeleton.SkeletonParams
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.autocompleteSuggestions.AutocompleteSuggestionParams
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.autocompleteSuggestions.AutocompleteSuggestions
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.searchbarInputField.SearchBarInputField
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.searchbarInputField.SearchbarInputFieldParams
-import com.paraskcd.kcdsearch.ui.shared.modifiers.shimmerLoading
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,22 +71,42 @@ fun UnifiedSearchBar(params: UnifiedSearchBarParams) {
             }
         }
 
-        if (params.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxWidth().height(8.dp).padding(horizontal = 16.dp).shimmerLoading()
+        AnimatedVisibility(
+            visible = params.isLoading,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                repeat(5) {
+                    Skeleton(
+                        params = SkeletonParams(
+                            fillMaxWidth = true,
+                            height = 28.dp,
+                            clip = RoundedCornerShape(16.dp)
+                        ),
+                        modifier = Modifier.skeletonModifiers()
+                    )
+                }
+            }
+        }
+
+        AnimatedVisibility(
+            visible = params.suggestions.isNotEmpty() && !params.isLoading,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            AutocompleteSuggestions(
+                params = AutocompleteSuggestionParams(
+                    suggestions = params.suggestions,
+                    onSuggestionClick = params.onSuggestionClick
+                )
             )
         }
-        AutocompleteSuggestions(
-            params = AutocompleteSuggestionParams(
-                suggestions = params.suggestions,
-                onSuggestionClick = params.onSuggestionClick
-            )
-        )
     }
 }
 
-private fun findDialogWindow(view: View): android.view.Window? {
-    var parent: android.view.ViewParent? = view.parent
+private fun findDialogWindow(view: View): Window? {
+    var parent: ViewParent? = view.parent
     while (parent != null) {
         if (parent is DialogWindowProvider) {
             return (parent as DialogWindowProvider).window
