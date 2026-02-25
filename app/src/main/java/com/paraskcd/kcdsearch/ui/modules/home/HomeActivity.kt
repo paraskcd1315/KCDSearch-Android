@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import com.paraskcd.kcdsearch.ui.modules.home.screens.HomeScreen
 import com.paraskcd.kcdsearch.ui.shared.components.kcdsearchLogo.KCDSearchLogo
 import com.paraskcd.kcdsearch.ui.shared.components.kcdsearchLogo.KCDSearchLogoParams
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.UnifiedSearchBar
@@ -46,67 +47,7 @@ class HomeActivity: ComponentActivity() {
         setContent {
             KCDSearchTheme {
                 val viewModel: HomeViewModel by viewModels()
-                val query by viewModel.query.collectAsState()
-                val areSuggestionsLoading by viewModel.isLoading.collectAsState()
-                val suggestions by viewModel.suggestions.collectAsState()
-                val scope = rememberCoroutineScope()
-                val searchBarState = rememberSearchBarState()
-
-                val view = LocalView.current
-
-                if (!view.isInEditMode) {
-                    SideEffect {
-                        val window = (view.context as Activity).window
-                        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
-                    }
-                }
-
-                Scaffold(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    containerColor = Color.Transparent
-                ) { innerPadding ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        MaterialTheme.colorScheme.surface
-                                    )
-                                )
-                            )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(innerPadding),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            KCDSearchLogo(
-                                params = KCDSearchLogoParams(
-                                    height = 150.dp
-                                )
-                            )
-                            UnifiedSearchBar(
-                                params = UnifiedSearchBarParams(
-                                    query = query,
-                                    onQueryChange = viewModel::setQuery,
-                                    searchBarState = searchBarState,
-                                    scope = scope,
-                                    placeholder = "Search...",
-                                    suggestions = suggestions,
-                                    isLoading = areSuggestionsLoading,
-                                    onSuggestionClick = { suggestion ->
-                                        viewModel.setQuery(suggestion)
-                                    }
-                                )
-                            )
-                        }
-                    }
-                }
+                HomeScreen(viewModel)
             }
         }
     }

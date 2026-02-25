@@ -54,8 +54,7 @@ class SearchService @Inject constructor(
     private val _autocompleteErrors = MutableStateFlow<Throwable?>(null)
     val autocompleteErrors = _autocompleteErrors.asStateFlow()
 
-    suspend fun search(query: String) {
-        searchQueryService.setQuery(query)
+    suspend fun search() {
         resetPagination()
         val q = searchQueryService.query.value.trim()
         if (q.isBlank()) {
