@@ -1,4 +1,4 @@
-package com.paraskcd.kcdsearch.ui.shared.layout
+package com.paraskcd.kcdsearch.ui.shared.layouts
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
