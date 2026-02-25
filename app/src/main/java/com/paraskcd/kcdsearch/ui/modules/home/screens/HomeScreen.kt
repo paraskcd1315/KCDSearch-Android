@@ -22,6 +22,8 @@ import com.paraskcd.kcdsearch.ui.shared.components.kcdsearchLogo.KCDSearchLogo
 import com.paraskcd.kcdsearch.ui.shared.components.kcdsearchLogo.KCDSearchLogoParams
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.UnifiedSearchBar
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.UnifiedSearchBarParams
+import com.paraskcd.kcdsearch.ui.shared.layout.ScreenColumnLayout
+import com.paraskcd.kcdsearch.ui.shared.layout.ScreenColumnLayoutParams
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,47 +36,32 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val searchBarState = rememberSearchBarState()
 
-    Scaffold(
-        modifier = Modifier
-            .scaffoldModifiers(),
-        containerColor = Color.Transparent
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .backgroundGradientModifiers(
-                    listOf(
-                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                        MaterialTheme.colorScheme.surface
-                    )
-                )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                KCDSearchLogo(
-                    params = KCDSearchLogoParams(
-                        height = 150.dp
-                    )
-                )
-                UnifiedSearchBar(
-                    params = UnifiedSearchBarParams(
-                        query = query,
-                        onQueryChange = viewModel::setQuery,
-                        searchBarState = searchBarState,
-                        scope = scope,
-                        placeholder = "Search...",
-                        suggestions = suggestions,
-                        isLoading = areSuggestionsLoading,
-                        onSuggestionClick = { suggestion ->
-                            viewModel.setQuery(suggestion)
-                        }
-                    )
-                )
-            }
-        }
+    ScreenColumnLayout(
+        params = ScreenColumnLayoutParams(
+            gradientColors = listOf(
+                MaterialTheme.colorScheme.surfaceContainerHigh,
+                MaterialTheme.colorScheme.surface
+            )
+        )
+    ) {
+        KCDSearchLogo(
+            params = KCDSearchLogoParams(
+                height = 150.dp
+            )
+        )
+        UnifiedSearchBar(
+            params = UnifiedSearchBarParams(
+                query = query,
+                onQueryChange = viewModel::setQuery,
+                searchBarState = searchBarState,
+                scope = scope,
+                placeholder = "Search...",
+                suggestions = suggestions,
+                isLoading = areSuggestionsLoading,
+                onSuggestionClick = { suggestion ->
+                    viewModel.setQuery(suggestion)
+                }
+            )
+        )
     }
 }
