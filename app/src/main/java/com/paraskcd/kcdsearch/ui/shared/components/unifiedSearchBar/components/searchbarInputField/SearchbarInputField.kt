@@ -44,7 +44,15 @@ fun SearchBarInputField(
     SearchBarDefaults.InputField(
         textFieldState = textFieldState,
         searchBarState = params.searchBarState,
-        onSearch = { params.scope.launch { params.searchBarState.animateToCollapsed() } },
+        onSearch = {
+            val query = textFieldState.text.toString().trim()
+            if (query.isNotEmpty()) {
+                params.onSearchSubmit(query)
+            }
+            params.scope.launch {
+                params.searchBarState.animateToCollapsed()
+            }
+        },
         modifier = Modifier.fillMaxWidth(),
         placeholder = {
             Text(

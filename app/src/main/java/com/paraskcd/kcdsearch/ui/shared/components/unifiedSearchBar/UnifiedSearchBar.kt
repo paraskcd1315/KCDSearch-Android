@@ -26,6 +26,7 @@ import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.a
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.autocompleteSuggestions.AutocompleteSuggestions
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.searchbarInputField.SearchBarInputField
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.searchbarInputField.SearchbarInputFieldParams
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +36,8 @@ fun UnifiedSearchBar(params: UnifiedSearchBarParams) {
         onQueryChange = params.onQueryChange,
         searchBarState = params.searchBarState,
         scope = params.scope,
-        placeholder = params.placeholder
+        placeholder = params.placeholder,
+        onSearchSubmit = params.onSuggestionClick,
     )
 
     SearchBar(
@@ -98,7 +100,12 @@ fun UnifiedSearchBar(params: UnifiedSearchBarParams) {
             AutocompleteSuggestions(
                 params = AutocompleteSuggestionParams(
                     suggestions = params.suggestions,
-                    onSuggestionClick = params.onSuggestionClick
+                    onSuggestionClick = { suggestion ->
+                        params.scope.launch {
+                            params.searchBarState.animateToCollapsed()
+                            params.onSuggestionClick(suggestion)
+                        }
+                    }
                 )
             )
         }

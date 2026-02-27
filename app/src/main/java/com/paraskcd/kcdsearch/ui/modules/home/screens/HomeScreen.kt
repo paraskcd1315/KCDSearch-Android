@@ -50,7 +50,7 @@ fun HomeScreen(
                 suggestions = suggestions,
                 isLoading = areSuggestionsLoading,
                 onSuggestionClick = { suggestion ->
-                    viewModel.setQuery(suggestion)
+                    viewModel.onSuggestionClick(suggestion)
                 }
             )
         )

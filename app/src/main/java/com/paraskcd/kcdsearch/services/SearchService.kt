@@ -1,5 +1,6 @@
 package com.paraskcd.kcdsearch.services
 
+import android.util.Log
 import com.paraskcd.kcdsearch.data.api.apps.dataSources.AppResult
 import com.paraskcd.kcdsearch.data.api.search.dataSources.infobox.Infobox
 import com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult.SearchResult
@@ -11,10 +12,13 @@ import com.paraskcd.kcdsearch.data.repositories.SearchRepository
 import com.paraskcd.kcdsearch.model.UnifiedSearchResult
 import com.paraskcd.kcdsearch.utils.withLoading
 import com.paraskcd.kcdsearch.utils.withLoadingResult
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -54,6 +58,19 @@ class SearchService @Inject constructor(
     private val _autocompleteErrors = MutableStateFlow<Throwable?>(null)
     val autocompleteErrors = _autocompleteErrors.asStateFlow()
 
+    private val _suggestions = MutableStateFlow<List<String>>(emptyList())
+    val suggestions = _suggestions.asStateFlow()
+
+    private var suggestionsJob: Job? = null
+
+    fun requestSuggestionsDebounced(scope: CoroutineScope) {
+        suggestionsJob?.cancel()
+        suggestionsJob = scope.launch {
+            delay(300)
+            _suggestions.value = getAutocompleteSuggestions()
+        }
+    }
+
     suspend fun search() {
         resetPagination()
         val q = searchQueryService.query.value.trim()
@@ -64,14 +81,24 @@ class SearchService @Inject constructor(
         withLoading(_isLoading, _error) {
             coroutineScope {
                 launch {
+                    Log.d("SearchService", "[APP] starting app search")
                     val appItems = appSearchRepository.search(AppSearchRequestDto(query = q, category = null))
+                    Log.d("SearchService", "[APP] completed: ${appItems.size} results")
                     _appResults.value = appItems
                     updateUnifiedResults()
                 }
                 launch {
+                    Log.d("SearchService", "[WEB] starting web search")
                     val webResult = searchRepository.search(SearchRequestDto(query = q, pageno = 1))
-                    webResult.onSuccess { applyWebPageResponse(it, isFirstPage = true) }
-                    webResult.onFailure { _error.value = it }
+                    Log.d("SearchService", "[WEB] completed: success=${webResult.isSuccess}, ${webResult.getOrNull()?.results?.size ?: 0} results")
+                    webResult.onSuccess {
+                        applyWebPageResponse(it, isFirstPage = true)
+                        Log.d("SearchService", "[WEB] applied: _webResults.size=${_webResults.value.size}")
+                    }
+                    webResult.onFailure {
+                        _error.value = it
+                        Log.e("SearchService", "[WEB] failed", it)
+                    }
                     updateUnifiedResults()
                 }
             }
@@ -137,7 +164,10 @@ class SearchService @Inject constructor(
     }
 
     private fun updateUnifiedResults() {
+        val appCount = _appResults.value.size
+        val webCount = _webResults.value.size
         _results.value = _appResults.value.map { UnifiedSearchResult.App(it) } + _webResults.value.map { UnifiedSearchResult.Web(it) }
+        Log.d("SearchService", "updateUnifiedResults: app=$appCount, web=$webCount, total=${_results.value.size}")
     }
 
     private fun canLoadMore(): Boolean =

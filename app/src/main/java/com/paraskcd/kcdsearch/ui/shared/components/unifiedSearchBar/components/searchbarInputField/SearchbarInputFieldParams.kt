@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 data class SearchbarInputFieldParams(
     val query: String,
     val onQueryChange: (String) -> Unit,
+    val onSearchSubmit: (String) -> Unit,
     val searchBarState: SearchBarState,
     val scope: CoroutineScope,
     val placeholder: String,

@@ -1,43 +1,37 @@
 package com.paraskcd.kcdsearch.ui.modules.home
 
-import android.util.Log
-import com.paraskcd.kcdsearch.services.SearchService
-import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
+import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paraskcd.kcdsearch.services.SearchQueryService
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.paraskcd.kcdsearch.services.SearchService
+import com.paraskcd.kcdsearch.ui.modules.search.SearchActivity
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    @param:ApplicationContext val context: Context,
     private val searchQueryService: SearchQueryService,
     private val searchService: SearchService
 ): ViewModel() {
     val query: StateFlow<String> = searchQueryService.query
     val isLoading: StateFlow<Boolean> = searchService.isAutocompleteLoading
-
-    private val _suggestions = MutableStateFlow<List<String>>(emptyList())
-    val suggestions: StateFlow<List<String>> = _suggestions.asStateFlow()
-
-    private var suggestionsJob: Job? = null
+    val suggestions: StateFlow<List<String>> = searchService.suggestions
 
     fun setQuery(value: String) {
         searchQueryService.setQuery(value)
-        loadSuggestionsDebounced()
+        searchService.requestSuggestionsDebounced(viewModelScope)
     }
 
-    private fun loadSuggestionsDebounced() {
-        suggestionsJob?.cancel()
-        suggestionsJob = viewModelScope.launch {
-            delay(300)
-            _suggestions.value = searchService.getAutocompleteSuggestions()
-            Log.d("Suggestions", suggestions.value.toString())
+    fun onSuggestionClick(suggestion: String) {
+        searchQueryService.setQuery(suggestion)
+        val intent = Intent(context, SearchActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+        context.startActivity(intent)
     }
 }
