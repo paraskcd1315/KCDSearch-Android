@@ -1,6 +1,7 @@
 package com.paraskcd.kcdsearch.ui.modules.search.components.searchTabs
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -10,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +26,13 @@ import com.paraskcd.kcdsearch.ui.modules.search.enums.SearchCategory
 
 @Composable
 fun SearchTabs(params: SearchTabsParams) {
+    val contentPadding = PaddingValues(
+        start = 24.dp,
+        end = 24.dp,
+        top = 16.dp,
+        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    )
+
     Column(
         modifier = params.modifier
             .fillMaxSize()
@@ -43,14 +53,26 @@ fun SearchTabs(params: SearchTabsParams) {
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
             thickness = 1.dp
         )
-        LazyColumn(
-            state = params.listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
-        ) {
-            when (params.selectedCategory) {
-                SearchCategory.Images -> params.imagesContent?.invoke(this)
-                else -> params.generalContent?.invoke(this)
+        when (params.selectedCategory) {
+            SearchCategory.Images -> {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Adaptive(minSize = 120.dp),
+                    state = params.staggeredGridState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = contentPadding,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    params.imagesContent?.invoke(this)
+                }
+            }
+            else -> {
+                LazyColumn(
+                    state = params.listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = contentPadding
+                ) {
+                    params.generalContent?.invoke(this)
+                }
             }
         }
     }
