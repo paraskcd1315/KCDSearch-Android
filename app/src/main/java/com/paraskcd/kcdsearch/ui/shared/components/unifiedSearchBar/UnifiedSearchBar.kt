@@ -75,11 +75,7 @@ fun UnifiedSearchBar(params: UnifiedSearchBarParams) {
             }
         }
 
-        AnimatedVisibility(
-            visible = params.isLoading,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
+        if (params.isLoading) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 repeat(5) {
                     Skeleton(
@@ -94,23 +90,17 @@ fun UnifiedSearchBar(params: UnifiedSearchBarParams) {
             }
         }
 
-        AnimatedVisibility(
-            visible = params.suggestions.isNotEmpty() && !params.isLoading,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            AutocompleteSuggestions(
-                params = AutocompleteSuggestionParams(
-                    suggestions = params.suggestions,
-                    onSuggestionClick = { suggestion ->
-                        params.scope.launch {
-                            params.searchBarState.animateToCollapsed()
-                            params.onSuggestionClick(suggestion)
-                        }
+        AutocompleteSuggestions(
+            params = AutocompleteSuggestionParams(
+                suggestions = params.suggestions,
+                onSuggestionClick = { suggestion ->
+                    params.scope.launch {
+                        params.searchBarState.animateToCollapsed()
+                        params.onSuggestionClick(suggestion)
                     }
-                )
+                }
             )
-        }
+        )
     }
 }
 

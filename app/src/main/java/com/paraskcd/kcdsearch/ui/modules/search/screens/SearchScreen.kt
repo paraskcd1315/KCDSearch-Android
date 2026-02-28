@@ -7,27 +7,27 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBarValue
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -37,12 +37,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.paraskcd.kcdsearch.model.UnifiedSearchResult
 import com.paraskcd.kcdsearch.ui.modules.search.SearchViewModel
-import com.paraskcd.kcdsearch.ui.modules.search.components.infoboxesAccordion.InfoboxesAccordion
+import com.paraskcd.kcdsearch.ui.modules.search.components.appsAccordion.AppsAccordion
+import com.paraskcd.kcdsearch.ui.modules.search.components.appsAccordion.AppsAccordionParams
+import com.paraskcd.kcdsearch.ui.modules.search.components.appsAccordion.components.appListRow.AppListRow
+import com.paraskcd.kcdsearch.ui.modules.search.components.appsAccordion.components.appListRow.AppListRowParams
+import com.paraskcd.kcdsearch.ui.modules.search.components.infoboxAccordion.InfoboxAccordion
+import com.paraskcd.kcdsearch.ui.modules.search.components.infoboxAccordion.InfoboxAccordionParams
+import com.paraskcd.kcdsearch.ui.modules.search.components.searchResultSkeleton.SearchResultSkeleton
+import com.paraskcd.kcdsearch.ui.modules.search.components.searchResultSkeleton.SearchResultSkeletonParams
 import com.paraskcd.kcdsearch.ui.modules.search.components.searchTabs.SearchTabs
 import com.paraskcd.kcdsearch.ui.modules.search.components.searchTabs.SearchTabsParams
 import com.paraskcd.kcdsearch.ui.modules.search.components.searchTabs.searchTabs
+import com.paraskcd.kcdsearch.ui.modules.search.components.webResultCard.WebResultCard
+import com.paraskcd.kcdsearch.ui.modules.search.components.webResultCard.WebResultCardParams
 import com.paraskcd.kcdsearch.ui.shared.components.kcdsearchLogo.KCDSearchLogo
 import com.paraskcd.kcdsearch.ui.shared.components.kcdsearchLogo.KCDSearchLogoParams
+import com.paraskcd.kcdsearch.ui.shared.components.listItemRow.ListItemRow
+import com.paraskcd.kcdsearch.ui.shared.components.listItemRow.ListItemRowParams
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.UnifiedSearchBar
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.UnifiedSearchBarParams
 import com.paraskcd.kcdsearch.ui.shared.layouts.ScreenColumnLayout
@@ -62,28 +73,35 @@ fun SearchScreen(
     val errors by viewModel.errors.collectAsState()
     val areSuggestionsLoading by viewModel.isSuggestionsLoading.collectAsState()
     val suggestions by viewModel.suggestions.collectAsState()
+    val hasMorePages by viewModel.hasMorePages.collectAsState()
     val scope = rememberCoroutineScope()
     val searchBarState = rememberSearchBarState()
     val listState = rememberLazyListState()
     val context = LocalContext.current
-    var showLogo by remember { mutableStateOf(true) }
-    var lastScrollOffset: Int by remember { mutableStateOf(0) }
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val selectedCategory = searchTabs[selectedTabIndex].value
-
-    LaunchedEffect(listState) {
-        snapshotFlow {
-            listState.firstVisibleItemScrollOffset + listState.firstVisibleItemIndex * 1000
-        }.collect { offset ->
-            val isScrollingDown = offset > lastScrollOffset
-            lastScrollOffset = offset
-            showLogo = !isScrollingDown || offset < 100
+    val showLogo by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset < 150
         }
     }
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val selectedCategory = searchTabs[selectedTabIndex].value
 
     BackHandler(enabled = searchBarState.currentValue == SearchBarValue.Collapsed) {
         viewModel.clearQuery()
         (context as? ComponentActivity)?.finish()
+    }
+
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisibleIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            lastVisibleIndex to totalItems
+        }.collect { (lastVisible, total) ->
+            if (total > 0 && lastVisible >= total - 3 && hasMorePages && !isLoading) {
+                viewModel.loadNextPage()
+            }
+        }
     }
 
     ScreenColumnLayout(
@@ -125,7 +143,85 @@ fun SearchScreen(
                 onTabSelected = { selectedTabIndex = it },
                 listState = listState,
                 contentPaddingBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                generalContent = {
+                    if (isLoading && query.isNotBlank() && webResults.isEmpty() && infoboxes.isEmpty()) {
+                        items(5, key = { "skeleton_$it" }) {
+                            SearchResultSkeleton(
+                                params = SearchResultSkeletonParams(
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
+                            )
+                        }
+                    }
+                    else {
+                        if (appResults.size > 4) {
+                            item(key = "apps_accordion") {
+                                AppsAccordion(
+                                    params = AppsAccordionParams(
+                                        appResults,
+                                        getAppIcon = { viewModel.getAppIcon(it) },
+                                        launchApp = { viewModel.launchApp(it) }
+                                    )
+                                )
+                            }
+                        } else {
+                            items(appResults, key = { it.packageName }) { app ->
+                                AppListRow(
+                                    params = AppListRowParams(
+                                        app,
+                                        modifier = Modifier.padding(16.dp),
+                                        getAppIcon = { viewModel.getAppIcon(it) },
+                                        launchApp = { viewModel.launchApp(it) }
+                                    )
+                                )
+                            }
+                        }
+                        items(
+                            infoboxes.filter { it.attributes.isNotEmpty() || it.content.isNotBlank() || it.imgSrc.isNotBlank() },
+                            key = { "${it.title}-${it.infobox}-${it.engine}" }
+                        ) { infobox ->
+                            InfoboxAccordion(
+                                params = InfoboxAccordionParams(
+                                    infobox = infobox
+                                )
+                            )
+                        }
+                        items(
+                            webResults,
+                            key = { it.url }
+                        ) { result ->
+                            WebResultCard(
+                                params = WebResultCardParams(
+                                    result = result,
+                                    modifier = Modifier.padding(bottom = 16.dp),
+                                    onUrlClick = viewModel::openUrl
+                                )
+                            )
+                        }
+                        if (isLoading && webResults.isNotEmpty()) {
+                            item(key = "loading_more") {
+                                SearchResultSkeleton(
+                                    params = SearchResultSkeletonParams(
+                                        modifier = Modifier.padding(vertical = 4.dp)
+                                    )
+                                )
+                            }
+                        }
+                        if (!hasMorePages && webResults.isNotEmpty()) {
+                            item(key = "no_more_results") {
+                                Text(
+                                    text = "No more results",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             )
         )
     }

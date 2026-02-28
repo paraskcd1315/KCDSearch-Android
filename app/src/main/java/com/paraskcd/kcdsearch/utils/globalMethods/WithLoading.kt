@@ -1,4 +1,4 @@
-package com.paraskcd.kcdsearch.utils
+package com.paraskcd.kcdsearch.utils.globalMethods
 
 import kotlinx.coroutines.flow.MutableStateFlow
 

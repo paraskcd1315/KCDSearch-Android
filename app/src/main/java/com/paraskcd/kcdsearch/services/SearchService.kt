@@ -10,8 +10,8 @@ import com.paraskcd.kcdsearch.data.dtos.SearchRequestDto
 import com.paraskcd.kcdsearch.data.repositories.AppSearchRepository
 import com.paraskcd.kcdsearch.data.repositories.SearchRepository
 import com.paraskcd.kcdsearch.model.UnifiedSearchResult
-import com.paraskcd.kcdsearch.utils.withLoading
-import com.paraskcd.kcdsearch.utils.withLoadingResult
+import com.paraskcd.kcdsearch.utils.globalMethods.withLoading
+import com.paraskcd.kcdsearch.utils.globalMethods.withLoadingResult
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay

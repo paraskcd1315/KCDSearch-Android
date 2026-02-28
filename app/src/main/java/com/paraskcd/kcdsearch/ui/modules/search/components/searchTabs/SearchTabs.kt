@@ -3,8 +3,11 @@ package com.paraskcd.kcdsearch.ui.modules.search.components.searchTabs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,13 +46,11 @@ fun SearchTabs(params: SearchTabsParams) {
         LazyColumn(
             state = params.listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 8.dp)
+            contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 16.dp, bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
         ) {
-            item {
-                when (params.selectedCategory) {
-                    SearchCategory.Images -> params.imagesContent?.invoke()
-                    else -> params.generalContent?.invoke()
-                }
+            when (params.selectedCategory) {
+                SearchCategory.Images -> params.imagesContent?.invoke(this)
+                else -> params.generalContent?.invoke(this)
             }
         }
     }
