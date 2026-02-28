@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,18 +20,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.paraskcd.kcdsearch.ui.shared.components.cardContainer.CardContainer
+import com.paraskcd.kcdsearch.ui.shared.components.cardContainer.CardContainerParams
 
 @Composable
 fun WebResultCard(params: WebResultCardParams) {
     val result = params.result
 
-    Card(
-        modifier = params.modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        onClick = { params.onUrlClick(result.url) }
+    CardContainer(
+        params = CardContainerParams(
+            modifier = params.modifier.fillMaxWidth(),
+            onClick = { params.onUrlClick(result.url) }
+        )
     ) {
         Column(
             modifier = Modifier

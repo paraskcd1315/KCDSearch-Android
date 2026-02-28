@@ -6,12 +6,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.paraskcd.kcdsearch.ui.shared.components.cardContainer.CardContainer
+import com.paraskcd.kcdsearch.ui.shared.components.cardContainer.CardContainerParams
 import com.paraskcd.kcdsearch.ui.shared.components.skeleton.Skeleton
 import com.paraskcd.kcdsearch.ui.shared.components.skeleton.SkeletonParams
 
@@ -19,13 +18,9 @@ import com.paraskcd.kcdsearch.ui.shared.components.skeleton.SkeletonParams
 fun SearchResultSkeleton(
     params: SearchResultSkeletonParams = SearchResultSkeletonParams()
 ) {
-    Card(
-        modifier = params.modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+    CardContainer(
+        params = CardContainerParams(
+            modifier = params.modifier.fillMaxWidth(),
         )
     ) {
         Column(

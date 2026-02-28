@@ -14,7 +14,7 @@ val searchTabs: List<SearchTab> = listOf(
     SearchTab("General", SearchCategory.General, Heroicons.Outline.MagnifyingGlass),
     SearchTab("Images", SearchCategory.Images, Heroicons.Outline.Photo),
     SearchTab("Videos", SearchCategory.Videos, Heroicons.Outline.VideoCamera),
-    SearchTab("Videos", SearchCategory.News, Heroicons.Outline.Newspaper),
+    SearchTab("News", SearchCategory.News, Heroicons.Outline.Newspaper),
     SearchTab("Music", SearchCategory.Music, Heroicons.Outline.MusicalNote),
     SearchTab("Science", SearchCategory.Science, Heroicons.Outline.AcademicCap),
 )

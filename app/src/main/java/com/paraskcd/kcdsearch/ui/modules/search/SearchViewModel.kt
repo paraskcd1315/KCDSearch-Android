@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.paraskcd.kcdsearch.services.SearchQueryService
 import com.paraskcd.kcdsearch.services.SearchService
+import com.paraskcd.kcdsearch.ui.modules.search.enums.SearchCategory
 import com.paraskcd.kcdsearch.utils.extensionMethods.toBitmap
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,6 +27,7 @@ class SearchViewModel @Inject constructor(
     private val searchQueryService: SearchQueryService
 ): ViewModel() {
     val query: StateFlow<String> = searchQueryService.query
+    val category = searchService.category
     val results = searchService.results
     val isLoading = searchService.isLoading
     val errors = searchService.error
@@ -45,8 +47,25 @@ class SearchViewModel @Inject constructor(
     }
 
     fun setQuery(value: String) {
+        if (value.isBlank()) {
+            searchService.clear()
+            return
+        }
         searchQueryService.setQuery(value)
         searchService.requestSuggestionsDebounced(viewModelScope)
+    }
+
+    fun submitSearch(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return
+        searchQueryService.setQuery(trimmed)
+        viewModelScope.launch {
+            searchService.search()
+        }
+    }
+
+    fun clearError() {
+        searchService.clearError()
     }
 
     fun loadNextPage() {
@@ -86,6 +105,13 @@ class SearchViewModel @Inject constructor(
             context.startActivity(intent)
         } catch (e: Exception) {
             // no browser available
+        }
+    }
+
+    fun setCategoryAndSearch(category: SearchCategory) {
+        searchService.setCategory(category)
+        viewModelScope.launch {
+            searchService.search()
         }
     }
 }

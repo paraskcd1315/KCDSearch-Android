@@ -3,16 +3,12 @@ package com.paraskcd.kcdsearch.ui.shared.components.expandableAccordionSection
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.paraskcd.kcdsearch.ui.shared.components.cardContainer.CardContainer
+import com.paraskcd.kcdsearch.ui.shared.components.cardContainer.CardContainerParams
 import com.paraskcd.kcdsearch.ui.shared.components.expandableAccordionSection.components.accordionExpandIcon.AccordionExpandIcon
 
 @Composable
@@ -36,15 +34,14 @@ fun ExpandableAccordionSection(
     var expanded by remember { mutableStateOf(params.initiallyExpanded) }
     val titleStyle = (params.titleTextStyle ?: MaterialTheme.typography.titleMedium) as TextStyle
     val titleColor = (params.titleColor ?: MaterialTheme.colorScheme.onSurface) as Color
-    val contentPadding = params.contentPaddingValues ?: PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp)
+    val contentPadding =
+        params.contentPaddingValues ?: PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp)
 
-    Card(
-        modifier = params.modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        onClick = { expanded = !expanded }
+    CardContainer(
+        params = CardContainerParams(
+            modifier = params.modifier.fillMaxWidth(),
+            onClick = { expanded = !expanded }
+        )
     ) {
         Column(
             modifier = Modifier

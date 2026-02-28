@@ -10,6 +10,8 @@ import com.paraskcd.kcdsearch.data.dtos.SearchRequestDto
 import com.paraskcd.kcdsearch.data.repositories.AppSearchRepository
 import com.paraskcd.kcdsearch.data.repositories.SearchRepository
 import com.paraskcd.kcdsearch.model.UnifiedSearchResult
+import com.paraskcd.kcdsearch.ui.modules.search.enums.SearchCategory
+import com.paraskcd.kcdsearch.utils.extensionMethods.toApiString
 import com.paraskcd.kcdsearch.utils.globalMethods.withLoading
 import com.paraskcd.kcdsearch.utils.globalMethods.withLoadingResult
 import kotlinx.coroutines.Job
@@ -61,6 +63,9 @@ class SearchService @Inject constructor(
     private val _suggestions = MutableStateFlow<List<String>>(emptyList())
     val suggestions = _suggestions.asStateFlow()
 
+    private val _category = MutableStateFlow(SearchCategory.General)
+    val category = _category.asStateFlow()
+
     private var suggestionsJob: Job? = null
 
     fun requestSuggestionsDebounced(scope: CoroutineScope) {
@@ -80,16 +85,18 @@ class SearchService @Inject constructor(
         }
         withLoading(_isLoading, _error) {
             coroutineScope {
-                launch {
-                    Log.d("SearchService", "[APP] starting app search")
-                    val appItems = appSearchRepository.search(AppSearchRequestDto(query = q, category = null))
-                    Log.d("SearchService", "[APP] completed: ${appItems.size} results")
-                    _appResults.value = appItems
-                    updateUnifiedResults()
+                if (_category.value == SearchCategory.General) {
+                    launch {
+                        Log.d("SearchService", "[APP] starting app search")
+                        val appItems = appSearchRepository.search(AppSearchRequestDto(query = q, category = null))
+                        Log.d("SearchService", "[APP] completed: ${appItems.size} results")
+                        _appResults.value = appItems
+                        updateUnifiedResults()
+                    }
                 }
                 launch {
                     Log.d("SearchService", "[WEB] starting web search")
-                    val webResult = searchRepository.search(SearchRequestDto(query = q, pageno = 1))
+                    val webResult = searchRepository.search(SearchRequestDto(query = q, pageno = 1, categories = _category.value.toApiString()))
                     Log.d("SearchService", "[WEB] completed: success=${webResult.isSuccess}, ${webResult.getOrNull()?.results?.size ?: 0} results")
                     webResult.onSuccess {
                         applyWebPageResponse(it, isFirstPage = true)
@@ -111,7 +118,11 @@ class SearchService @Inject constructor(
         }
         withLoading(_isLoading, _error) {
             val webResult = searchRepository.search(
-                SearchRequestDto(query = searchQueryService.query.value.trim(), pageno = _currentPage.value + 1),
+                SearchRequestDto(
+                    query = searchQueryService.query.value.trim(),
+                    pageno = _currentPage.value + 1,
+                    categories = _category.value.toApiString()
+                ),
             )
             webResult.onSuccess { applyWebPageResponse(it, isFirstPage = false) }
             webResult.onFailure { _error.value = it }
@@ -129,7 +140,16 @@ class SearchService @Inject constructor(
 
     fun clear() {
         searchQueryService.clearQuery()
+        _category.value = SearchCategory.General
         resetPagination()
+    }
+
+    fun setCategory(category: SearchCategory) {
+        _category.value = category
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 
     private fun resetPagination() {
@@ -155,9 +175,11 @@ class SearchService @Inject constructor(
 
         _totalResults.value = response.numberOfResults
 
-        if (response.infoboxes.isNotEmpty()) {
+        if (_category.value == SearchCategory.General && response.infoboxes.isNotEmpty()) {
             _infoboxes.value = response.infoboxes
             Log.d("Infoboxes", response.infoboxes.toString())
+        } else if (_category.value != SearchCategory.General) {
+            _infoboxes.value = emptyList()
         }
 
         _hasMorePages.value = response.results.isNotEmpty()
