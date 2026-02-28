@@ -187,7 +187,7 @@ fun SearchScreen(
                                     AppListRow(
                                         params = AppListRowParams(
                                             app,
-                                            modifier = Modifier.padding(16.dp),
+                                            modifier = Modifier.padding(bottom = 16.dp),
                                             getAppIcon = { viewModel.getAppIcon(it) },
                                             launchApp = { viewModel.launchApp(it) }
                                         )
