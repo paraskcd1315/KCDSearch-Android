@@ -32,7 +32,7 @@ fun ExpandableAccordionSection(
     content: @Composable () -> Unit
 ) {
     var expanded by remember { mutableStateOf(params.initiallyExpanded) }
-    val titleStyle = (params.titleTextStyle ?: MaterialTheme.typography.titleMedium) as TextStyle
+    val titleStyle = params.titleTextStyle ?: MaterialTheme.typography.titleMedium
     val titleColor = (params.titleColor ?: MaterialTheme.colorScheme.onSurface) as Color
     val contentPadding =
         params.contentPaddingValues ?: PaddingValues(start = 16.dp, end = 16.dp, bottom = 12.dp)

@@ -3,6 +3,7 @@ package com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 import com.paraskcd.kcdsearch.data.api.search.adapters.AnswersDeserializer
+import com.paraskcd.kcdsearch.data.api.search.adapters.UnresponsiveEnginesDeserializer
 import com.paraskcd.kcdsearch.data.api.search.dataSources.infobox.Infobox
 
 data class SearchResultResponse(
@@ -16,5 +17,6 @@ data class SearchResultResponse(
     val infoboxes: List<Infobox>,
     val suggestions: List<String>,
     @SerializedName("unresponsive_engines")
+    @JsonAdapter(UnresponsiveEnginesDeserializer::class)
     val unresponsiveEngines: List<String>? = null
 )

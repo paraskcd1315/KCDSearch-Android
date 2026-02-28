@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -193,20 +194,20 @@ fun SearchScreen(
                                     )
                                 }
                             }
-                            items(
-                                infoboxes.filter { it.attributes.isNotEmpty() || it.content.isNotBlank() || it.imgSrc.isNotBlank() },
-                                key = { "${it.title}-${it.infobox}-${it.engine}" }
-                            ) { infobox ->
+                            itemsIndexed(
+                                infoboxes.filter { it.attributes.isNotEmpty() || !it.content.isNullOrBlank() || !it.imgSrc.isNullOrBlank() },
+                                key = { index, infobox -> "infobox_${index}_${infobox.title}_${infobox.infobox}_${infobox.engine}" }
+                            ) { _, infobox ->
                                 InfoboxAccordion(
                                     params = InfoboxAccordionParams(
                                         infobox = infobox
                                     )
                                 )
                             }
-                            items(
+                            itemsIndexed(
                                 webResults,
-                                key = { it.url }
-                            ) { result ->
+                                key = { index, result -> "web_${index}_${result.url.orEmpty()}_${result.title.orEmpty()}" }
+                            ) { _, result ->
                                 WebResultCard(
                                     params = WebResultCardParams(
                                         result = result,

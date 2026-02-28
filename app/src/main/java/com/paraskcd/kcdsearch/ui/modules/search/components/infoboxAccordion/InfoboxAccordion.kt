@@ -29,18 +29,19 @@ fun InfoboxAccordion(
     params: InfoboxAccordionParams
 ) {
     val infobox = params.infobox
+    val titleText = (infobox.infobox ?: "").ifEmpty { infobox.title ?: "" }
 
     ExpandableAccordionSection(
         params = ExpandableAccordionSectionParams(
-            title = infobox.infobox.ifEmpty { infobox.title },
+            title = titleText,
             modifier = Modifier.padding(bottom = 16.dp),
             initiallyExpanded = false,
             titleTextStyle = MaterialTheme.typography.titleSmall,
             summaryContent = { expanded ->
-                if (infobox.content.isNotBlank()) {
+                if (!infobox.content.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = infobox.content
+                        text = (infobox.content ?: "")
                             .replace(Regex("\\n{2,}"), "\n")
                             .trim(),
                         style = MaterialTheme.typography.bodyMedium,
@@ -53,13 +54,13 @@ fun InfoboxAccordion(
             contentPaddingValues = PaddingValues(top = 12.dp)
         )
     ) {
-        if (infobox.imgSrc.isNotBlank()) {
+        if (!infobox.imgSrc.isNullOrBlank()) {
             SubcomposeAsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(infobox.imgSrc)
                     .crossfade(true)
                     .build(),
-                contentDescription = infobox.title,
+                contentDescription = infobox.title ?: "",
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 200.dp),
@@ -78,11 +79,13 @@ fun InfoboxAccordion(
         }
         if (infobox.urls.isNotEmpty()) {
             infobox.urls.forEach { urlItem ->
-                Text(
-                    text = urlItem.title,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                (urlItem.title ?: urlItem.url).takeIf { !it.isNullOrBlank() }?.let { text ->
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }
@@ -94,11 +97,13 @@ private fun InfoboxAttributeRow(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = attribute.label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-        )
+        attribute.label?.let { label ->
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+            )
+        }
         attribute.value?.let { value ->
             Text(
                 text = value,
@@ -107,18 +112,20 @@ private fun InfoboxAttributeRow(
             )
         }
         attribute.image?.let { img ->
-            Spacer(modifier = Modifier.height(4.dp))
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(img.src)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = img.alt,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 180.dp),
-                contentScale = ContentScale.Fit
-            )
+            img.src?.let { src ->
+                Spacer(modifier = Modifier.height(4.dp))
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(src)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = img.alt ?: "",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 180.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
         }
     }
 }

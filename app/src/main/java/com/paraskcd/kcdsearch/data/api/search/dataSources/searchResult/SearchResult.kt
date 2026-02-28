@@ -3,14 +3,14 @@ package com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult
 import com.google.gson.annotations.SerializedName
 
 data class SearchResult(
-  val url: String,
-  val title: String,
-  val thumbnail: String,
+  val url: String? = null,
+  val title: String? = null,
+  val thumbnail: String? = null,
   @SerializedName("thumbnail_src") val thumbnailSrc: String? = null,
   val template: String? = null,
   val score: Double? = null,
-  val content: String,
-  val engine: String,
+  val content: String? = null,
+  val engine: String? = null,
   @SerializedName("parsed_url") val parsedUrl: List<String> = emptyList(),
   @SerializedName("img_src") val imgSrc: String? = null,
   val publishedDate: String? = null,

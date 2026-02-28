@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -22,15 +23,20 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.paraskcd.kcdsearch.ui.shared.components.cardContainer.CardContainer
 import com.paraskcd.kcdsearch.ui.shared.components.cardContainer.CardContainerParams
+import com.paraskcd.kcdsearch.utils.extensionMethods.toReadableDate
 
 @Composable
 fun WebResultCard(params: WebResultCardParams) {
     val result = params.result
+    val url = result.url.orEmpty()
+    val title = result.title.orEmpty()
+    val content = result.content.orEmpty()
+    val locale = LocalConfiguration.current.locales[0]
 
     CardContainer(
         params = CardContainerParams(
             modifier = params.modifier.fillMaxWidth(),
-            onClick = { params.onUrlClick(result.url) }
+            onClick = { params.onUrlClick(url) }
         )
     ) {
         Column(
@@ -39,7 +45,7 @@ fun WebResultCard(params: WebResultCardParams) {
                 .padding(16.dp)
         ) {
             Text(
-                text = result.url,
+                text = url,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                 maxLines = 1,
@@ -47,7 +53,7 @@ fun WebResultCard(params: WebResultCardParams) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = result.title,
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 maxLines = 2,
@@ -56,7 +62,7 @@ fun WebResultCard(params: WebResultCardParams) {
             if (!result.publishedDate.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = result.publishedDate,
+                    text = result.publishedDate.toReadableDate(locale),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
@@ -66,13 +72,13 @@ fun WebResultCard(params: WebResultCardParams) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top
             ) {
-                if (result.thumbnail.isNotBlank()) {
+                if (!result.thumbnail.isNullOrBlank()) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(result.thumbnail)
                             .crossfade(true)
                             .build(),
-                        contentDescription = result.title,
+                        contentDescription = title,
                         modifier = Modifier
                             .size(96.dp)
                             .heightIn(max = 96.dp),
@@ -81,7 +87,7 @@ fun WebResultCard(params: WebResultCardParams) {
                     Spacer(modifier = Modifier.width(12.dp))
                 }
                 Text(
-                    text = result.content,
+                    text = content,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 3,
