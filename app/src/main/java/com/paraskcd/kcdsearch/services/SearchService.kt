@@ -157,6 +157,7 @@ class SearchService @Inject constructor(
 
         if (response.infoboxes.isNotEmpty()) {
             _infoboxes.value = response.infoboxes
+            Log.d("Infoboxes", response.infoboxes.toString())
         }
 
         _hasMorePages.value = response.results.isNotEmpty()
