@@ -15,9 +15,17 @@ import javax.inject.Singleton
 class SearchRepository @Inject constructor(
     private val searchApi: SearchApi,
     private val autocompleteApi: AutocompleteApi,
+    private val searchCacheRepository: SearchCacheRepository,
+    private val searchHistoryRepository: SearchHistoryRepository,
 ) {
     suspend fun search(request: SearchRequestDto): Result<SearchResultResponse> = withContext(
         Dispatchers.IO) {
+        val cached = searchCacheRepository.getCachedSearchResults(request.query, request.categories)
+        if (cached != null) {
+            Log.d("SearchRepository", "Cache HIT for query: ${request.query}")
+            searchHistoryRepository.upsertQuery(request.query)
+            return@withContext Result.success(cached)
+        }
         runCatching {
             searchApi.search(
                 query = request.query,
@@ -27,10 +35,18 @@ class SearchRepository @Inject constructor(
                 engines = request.engines,
                 safesearch = request.safesearch,
             )
+        }.onSuccess { response ->
+            searchHistoryRepository.upsertQuery(request.query)
+            searchCacheRepository.cacheSearchResults(request.query, request.categories, response)
         }
     }
 
     suspend fun autocomplete(query: String): Result<List<String>> = withContext(Dispatchers.IO) {
+        val cached = searchCacheRepository.getCachedSuggestions(query)
+        if (cached != null) {
+            Log.d("SearchRepository", "Suggestions cache HIT for: $query")
+            return@withContext Result.success(cached)
+        }
         runCatching {
             val raw = autocompleteApi.autocomplete(query)
             Log.d("SuggestionsApi", raw.toString())
@@ -52,6 +68,11 @@ class SearchRepository @Inject constructor(
                     }
                 }
             }
+        }.onSuccess { list ->
+            searchCacheRepository.cacheSuggestions(query, list)
         }
     }
+
+    suspend fun getRecentSearchQueries(limit: Int = 15): List<String> =
+        searchHistoryRepository.getRecentQueriesSync(limit)
 }

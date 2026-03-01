@@ -9,6 +9,7 @@ import com.paraskcd.kcdsearch.data.dtos.AppSearchRequestDto
 import com.paraskcd.kcdsearch.data.dtos.SearchRequestDto
 import com.paraskcd.kcdsearch.data.repositories.AppSearchRepository
 import com.paraskcd.kcdsearch.data.repositories.SearchRepository
+import com.paraskcd.kcdsearch.model.SuggestionItem
 import com.paraskcd.kcdsearch.model.UnifiedSearchResult
 import com.paraskcd.kcdsearch.ui.modules.search.enums.SearchCategory
 import com.paraskcd.kcdsearch.utils.extensionMethods.toApiString
@@ -60,19 +61,27 @@ class SearchService @Inject constructor(
     private val _autocompleteErrors = MutableStateFlow<Throwable?>(null)
     val autocompleteErrors = _autocompleteErrors.asStateFlow()
 
-    private val _suggestions = MutableStateFlow<List<String>>(emptyList())
+    private val _suggestions = MutableStateFlow<List<SuggestionItem>>(emptyList())
     val suggestions = _suggestions.asStateFlow()
 
     private val _category = MutableStateFlow(SearchCategory.General)
     val category = _category.asStateFlow()
 
     private var suggestionsJob: Job? = null
+    private var loadingShowJob: Job? = null
 
     fun requestSuggestionsDebounced(scope: CoroutineScope) {
         suggestionsJob?.cancel()
         suggestionsJob = scope.launch {
-            delay(300)
-            _suggestions.value = getAutocompleteSuggestions()
+            delay(500)
+            getAutocompleteSuggestions()
+        }
+    }
+
+    fun requestSuggestionsImmediate(scope: CoroutineScope) {
+        suggestionsJob?.cancel()
+        scope.launch {
+            getAutocompleteSuggestions()
         }
     }
 
@@ -130,18 +139,61 @@ class SearchService @Inject constructor(
         }
     }
 
-    suspend fun getAutocompleteSuggestions(): List<String> {
+    suspend fun getAutocompleteSuggestions() {
         val query = searchQueryService.query.value.trim()
-        if (query.length <= 2) return emptyList()
-        return withLoadingResult(_isAutocompleteLoading, _autocompleteErrors) {
-            searchRepository.autocomplete(query).getOrElse { emptyList() }
+
+        if (query.isEmpty()) {
+            _suggestions.value = searchRepository.getRecentSearchQueries(limit = 15)
+                .map { SuggestionItem.Text(it) }
+
+            return
+        }
+
+        if (query.length <= 2) {
+            withLoading(_isAutocompleteLoading, _autocompleteErrors) {
+                val appMatches = appSearchRepository.search(AppSearchRequestDto(query = query, category = null))
+                _suggestions.value = appMatches.take(5).map { SuggestionItem.App(it) }
+            }
+            return
+        }
+
+        withLoading(_isAutocompleteLoading, _autocompleteErrors) {
+            var appItems = emptyList<SuggestionItem.App>()
+            var apiItems = emptyList<SuggestionItem.Text>()
+
+            fun publishSuggestions() {
+                _suggestions.value = appItems + apiItems
+            }
+
+            coroutineScope {
+                launch {
+                    val matches = appSearchRepository.search(AppSearchRequestDto(query = query, category = null))
+                        .take(5)
+                        .map { SuggestionItem.App(it) }
+                    appItems = matches
+                    publishSuggestions()
+                }
+                launch {
+                    val texts = searchRepository.autocomplete(query)
+                        .getOrElse { emptyList() }
+                        .take(10)
+                        .map { SuggestionItem.Text(it) }
+                    apiItems = texts
+                    publishSuggestions()
+                }
+            }
         }
     }
 
-    fun clear() {
+    fun clear(scope: CoroutineScope) {
         searchQueryService.clearQuery()
         _category.value = SearchCategory.General
         resetPagination()
+        requestSuggestionsDebounced(scope)
+    }
+
+    fun clearSuggestions() {
+        _suggestions.value = emptyList()
     }
 
     fun setCategory(category: SearchCategory) {

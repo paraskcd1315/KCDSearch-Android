@@ -1,5 +1,6 @@
 package com.paraskcd.kcdsearch.di
 
+import com.google.gson.Gson
 import com.paraskcd.kcdsearch.constants.SearchApiConstants
 import com.paraskcd.kcdsearch.data.api.autocomplete.AutocompleteApi
 import com.paraskcd.kcdsearch.data.api.search.SearchApi
@@ -41,4 +42,8 @@ object NetworkModule {
     @Singleton
     fun provideAutocompleteApi(retrofit: Retrofit): AutocompleteApi =
         retrofit.create(AutocompleteApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideGson(): Gson = Gson()
 }

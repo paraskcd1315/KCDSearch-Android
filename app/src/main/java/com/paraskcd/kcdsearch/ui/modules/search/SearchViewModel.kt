@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.paraskcd.kcdsearch.model.SuggestionItem
 import com.paraskcd.kcdsearch.services.SearchQueryService
 import com.paraskcd.kcdsearch.services.SearchService
 import com.paraskcd.kcdsearch.ui.modules.search.enums.SearchCategory
@@ -35,7 +36,7 @@ class SearchViewModel @Inject constructor(
     val totalResults = searchService.totalResults
     val hasMorePages = searchService.hasMorePages
     val isSuggestionsLoading: StateFlow<Boolean> = searchService.isAutocompleteLoading
-    val suggestions: StateFlow<List<String>> = searchService.suggestions
+    val suggestions: StateFlow<List<SuggestionItem>> = searchService.suggestions
 
     private var suggestionsJob: Job? = null
     private val iconCache = mutableMapOf<String, androidx.compose.ui.graphics.ImageBitmap?>()
@@ -46,9 +47,13 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    fun onSearchBarExpanded() {
+        searchService.requestSuggestionsImmediate(viewModelScope)
+    }
+
     fun setQuery(value: String) {
         if (value.isBlank()) {
-            searchService.clear()
+            searchService.clear(viewModelScope)
             return
         }
         searchQueryService.setQuery(value)
@@ -64,6 +69,13 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    fun onSuggestionClick(suggestion: SuggestionItem) {
+        when (suggestion) {
+            is SuggestionItem.Text -> submitSearch(suggestion.value)
+            is SuggestionItem.App -> launchApp(suggestion.item.packageName)
+        }
+    }
+
     fun clearError() {
         searchService.clearError()
     }
@@ -75,7 +87,7 @@ class SearchViewModel @Inject constructor(
     }
 
     fun clearQuery() {
-        searchService.clear()
+        searchService.clear(viewModelScope)
     }
 
     fun getAppIcon(packageName: String): ImageBitmap? {

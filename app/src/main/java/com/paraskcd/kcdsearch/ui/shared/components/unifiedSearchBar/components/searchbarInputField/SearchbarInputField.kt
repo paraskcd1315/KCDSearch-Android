@@ -24,21 +24,13 @@ import kotlinx.coroutines.launch
 fun SearchBarInputField(
     params: SearchbarInputFieldParams
 ) {
-    val textFieldState = rememberTextFieldState(initialText = params.query)
+    val textFieldState = params.textFieldState
 
     LaunchedEffect(Unit) {
         snapshotFlow { textFieldState.text.toString() }
             .collect { text ->
-                if (text != params.query) {
-                    params.onQueryChange(text)
-                }
+                params.onQueryChange(text)
             }
-    }
-
-    LaunchedEffect(params.query) {
-        if (textFieldState.text.toString() != params.query) {
-            textFieldState.edit { replace(0, length, params.query) }
-        }
     }
 
     SearchBarDefaults.InputField(
@@ -73,7 +65,7 @@ fun SearchBarInputField(
                 SearchBarValue.Expanded -> {
                     IconButton(onClick = { params.scope.launch { params.searchBarState.animateToCollapsed() } }) {
                         Icon(
-                            imageVector = Heroicons.Outline.ArrowLeft,  // back arrow when expanded
+                            imageVector = Heroicons.Outline.ArrowLeft,
                             contentDescription = "Back",
                         )
                     }
@@ -87,7 +79,7 @@ fun SearchBarInputField(
                     params.onQueryChange("")
                 }) {
                     Icon(
-                        imageVector = Heroicons.Outline.XMark,  // or XCircle
+                        imageVector = Heroicons.Outline.XMark,
                         contentDescription = "Clear",
                     )
                 }

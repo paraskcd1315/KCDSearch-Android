@@ -8,6 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.unit.dp
+import com.paraskcd.kcdsearch.model.SuggestionItem
 import com.paraskcd.kcdsearch.ui.modules.home.HomeViewModel
 import com.paraskcd.kcdsearch.ui.shared.components.kcdsearchLogo.KCDSearchLogo
 import com.paraskcd.kcdsearch.ui.shared.components.kcdsearchLogo.KCDSearchLogoParams
@@ -49,9 +50,13 @@ fun HomeScreen(
                 placeholder = "Search...",
                 suggestions = suggestions,
                 isLoading = areSuggestionsLoading,
-                onSuggestionClick = { suggestion ->
-                    viewModel.onSuggestionClick(suggestion)
-                }
+                getAppIcon = { viewModel.getAppIcon(it) },
+                onQuerySubmit = { query ->
+                    if (query.isNotBlank()) {
+                        viewModel.onSuggestionClick(SuggestionItem.Text(query))
+                    }
+                },
+                onSuggestionClick = viewModel::onSuggestionClick,
             )
         )
     }

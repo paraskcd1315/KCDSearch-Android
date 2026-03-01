@@ -184,7 +184,9 @@ fun SearchScreen(
                     placeholder = "Search...",
                     suggestions = suggestions,
                     isLoading = areSuggestionsLoading,
-                    onSuggestionClick = { viewModel.submitSearch(it) },
+                    getAppIcon = { viewModel.getAppIcon(it) },
+                    onQuerySubmit = { viewModel.submitSearch(it) },
+                    onSuggestionClick = viewModel::onSuggestionClick,
                 )
             )
             SearchTabs(
