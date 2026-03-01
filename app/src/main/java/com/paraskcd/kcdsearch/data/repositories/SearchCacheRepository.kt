@@ -1,6 +1,7 @@
 package com.paraskcd.kcdsearch.data.repositories
 
 import com.google.gson.Gson
+import com.paraskcd.kcdsearch.data.api.logging.CacheDeletionLogger
 import com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult.SearchResultResponse
 import com.paraskcd.kcdsearch.data.local.dao.SearchCacheDao
 import com.paraskcd.kcdsearch.data.local.entities.SearchCacheEntity
@@ -10,7 +11,8 @@ import javax.inject.Singleton
 @Singleton
 class SearchCacheRepository @Inject constructor(
     private val searchCacheDao: SearchCacheDao,
-    private val gson: Gson
+    private val gson: Gson,
+    private val cacheDeletionLogger: CacheDeletionLogger,
 ) {
     private val cacheValidityMs = 24 * 60 * 60 * 1000L
 
@@ -61,8 +63,20 @@ class SearchCacheRepository @Inject constructor(
     }
 
     suspend fun deleteExpiredCache() {
-        val expireTime = System.currentTimeMillis() - cacheValidityMs
-        searchCacheDao.deleteExpired(expireTime)
+        try {
+            val expireTime = System.currentTimeMillis() - cacheValidityMs
+            val deletedCount = searchCacheDao.deleteExpired(expireTime)
+            cacheDeletionLogger.logDeletion("search_cache", deletedCount)
+        } catch (e: Exception) {
+            cacheDeletionLogger.logFailure("search_cache", e.message ?: e.toString())
+            throw e
+        } finally {
+            try {
+                cacheDeletionLogger.deleteOldLogs()
+            } catch (e: Exception) {
+                cacheDeletionLogger.logFailure("delete_old_logs", e.message ?: e.toString())
+            }
+        }
     }
 
     private fun cacheKey(type: String, query: String, extra: String): String =

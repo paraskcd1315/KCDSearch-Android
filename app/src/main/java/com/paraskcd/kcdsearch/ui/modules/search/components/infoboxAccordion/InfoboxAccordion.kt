@@ -41,7 +41,7 @@ fun InfoboxAccordion(
                 if (!infobox.content.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = (infobox.content ?: "")
+                        text = infobox.content
                             .replace(Regex("\\n{2,}"), "\n")
                             .trim(),
                         style = MaterialTheme.typography.bodyMedium,

@@ -15,7 +15,7 @@ interface SearchCacheDao {
     suspend fun getValid(key: String, minValidTime: Long): SearchCacheEntity?
 
     @Query("DELETE FROM search_cache WHERE cachedAt < :expireTime")
-    suspend fun deleteExpired(expireTime: Long)
+    suspend fun deleteExpired(expireTime: Long): Int
 
     @Query("DELETE FROM search_cache WHERE cacheType = :type AND cachedAt < :expireTime")
     suspend fun deleteExpiredByType(type: String, expireTime: Long)
