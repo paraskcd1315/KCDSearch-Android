@@ -3,6 +3,7 @@ package com.paraskcd.kcdsearch.ui.modules.search
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.net.toUri
@@ -27,18 +28,17 @@ class SearchViewModel @Inject constructor(
     private val searchService: SearchService,
     private val searchQueryService: SearchQueryService
 ): ViewModel() {
-    val query: StateFlow<String> = searchQueryService.query
+    val query = searchQueryService.query
     val category = searchService.category
     val results = searchService.results
     val isLoading = searchService.isLoading
     val errors = searchService.error
+    val autocompleteErrors = searchService.autocompleteErrors
     val infoboxes = searchService.infoboxes
     val totalResults = searchService.totalResults
     val hasMorePages = searchService.hasMorePages
-    val isSuggestionsLoading: StateFlow<Boolean> = searchService.isAutocompleteLoading
-    val suggestions: StateFlow<List<SuggestionItem>> = searchService.suggestions
-
-    private var suggestionsJob: Job? = null
+    val isSuggestionsLoading = searchService.isAutocompleteLoading
+    val suggestions = searchService.suggestions
     private val iconCache = mutableMapOf<String, androidx.compose.ui.graphics.ImageBitmap?>()
 
     init {
@@ -49,6 +49,10 @@ class SearchViewModel @Inject constructor(
 
     fun onSearchBarExpanded() {
         searchService.requestSuggestionsImmediate(viewModelScope)
+    }
+
+    fun clearAutocompleteError() {
+        searchService.clearAutocompleteError()
     }
 
     fun setQuery(value: String) {
@@ -69,10 +73,48 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    fun contactRequiresPermission(): Boolean = searchService.contactRequiresPermission()
+
+    fun isWhatsappInstalled(): Boolean = searchService.isWhatsappInstalled()
+
+    fun getContactUriByNumber(number: String) = searchService.getContactUriByNumber(number)
+
+    fun openContactDetails(uri: Uri?) {
+        uri?.let {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                data = it
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        }
+    }
+
+    fun openDialer(number: String) {
+        val intent = Intent(Intent.ACTION_DIAL, "tel:$number".toUri())
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    }
+
+    fun openMessages(number: String) {
+        val intent = Intent(Intent.ACTION_SENDTO).apply {
+            data = "smsto:$number".toUri()
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    }
+
+    fun openWhatsApp(number: String) {
+        val sanitized = number.replace("[^\\d+]".toRegex(), "")
+        val intent = Intent(Intent.ACTION_VIEW, "https://wa.me/$sanitized".toUri())
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    }
+
     fun onSuggestionClick(suggestion: SuggestionItem) {
         when (suggestion) {
             is SuggestionItem.Text -> submitSearch(suggestion.value)
             is SuggestionItem.App -> launchApp(suggestion.item.packageName)
+            is SuggestionItem.Contact -> openContactDetails(searchService.getContactUriByNumber(suggestion.item.number))
         }
     }
 

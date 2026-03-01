@@ -9,6 +9,7 @@ import androidx.work.Configuration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.paraskcd.kcdsearch.data.api.contacts.ContactsApi
 import com.paraskcd.kcdsearch.services.SearchService
 import com.paraskcd.kcdsearch.workers.CacheCleanupWorker
 import dagger.hilt.android.HiltAndroidApp
@@ -22,6 +23,9 @@ class KCDSearchApp: Application(), Configuration.Provider {
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var contactsApi: ContactsApi
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -43,8 +47,12 @@ class KCDSearchApp: Application(), Configuration.Provider {
         )
 
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                contactsApi.startObserving()
+            }
             override fun onStop(owner: LifecycleOwner) {
                 searchService.clearSuggestions()
+                contactsApi.stopObserving()
             }
         })
     }

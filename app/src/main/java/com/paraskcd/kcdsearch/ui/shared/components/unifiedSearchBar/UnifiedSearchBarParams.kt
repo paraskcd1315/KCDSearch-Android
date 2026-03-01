@@ -21,4 +21,6 @@ data class UnifiedSearchBarParams(
     val onQuerySubmit: (String) -> Unit = {},
     val onSuggestionClick: (SuggestionItem) -> Unit = {},
     val onSearchBarExpanded: () -> Unit = {},
+    val autocompleteError: Throwable? = null,
+    val onClearAutocompleteError: () -> Unit = {},
 )

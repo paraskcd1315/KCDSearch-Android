@@ -3,6 +3,7 @@ package com.paraskcd.kcdsearch.ui.modules.home
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.ViewModel
@@ -25,9 +26,10 @@ class HomeViewModel @Inject constructor(
     private val searchQueryService: SearchQueryService,
     private val searchService: SearchService
 ): ViewModel() {
-    val query: StateFlow<String> = searchQueryService.query
-    val isLoading: StateFlow<Boolean> = searchService.isAutocompleteLoading
-    val suggestions: StateFlow<List<SuggestionItem>> = searchService.suggestions
+    val query = searchQueryService.query
+    val isLoading = searchService.isAutocompleteLoading
+    val suggestions = searchService.suggestions
+    val autocompleteErrors = searchService.autocompleteErrors
 
     init {
         viewModelScope.launch {
@@ -48,6 +50,22 @@ class HomeViewModel @Inject constructor(
         searchService.requestSuggestionsDebounced(viewModelScope)
     }
 
+    fun clearAutocompleteError() {
+        searchService.clearAutocompleteError()
+    }
+
+    fun getContactUriByNumber(number: String) = searchService.getContactUriByNumber(number)
+
+    fun openContactDetails(uri: Uri?) {
+        uri?.let {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                data = it
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        }
+    }
+
     fun onSuggestionClick(suggestion: SuggestionItem) {
         when (suggestion) {
             is SuggestionItem.Text -> {
@@ -58,6 +76,7 @@ class HomeViewModel @Inject constructor(
                 context.startActivity(intent)
             }
             is SuggestionItem.App -> launchApp(suggestion.item.packageName)
+            is SuggestionItem.Contact -> openContactDetails(getContactUriByNumber(suggestion.item.number))
         }
     }
 

@@ -25,6 +25,7 @@ fun HomeScreen(
     val query by viewModel.query.collectAsState()
     val areSuggestionsLoading by viewModel.isLoading.collectAsState()
     val suggestions by viewModel.suggestions.collectAsState()
+    val autocompleteError by viewModel.autocompleteErrors.collectAsState()
     val scope = rememberCoroutineScope()
     val searchBarState = rememberSearchBarState()
 
@@ -57,6 +58,8 @@ fun HomeScreen(
                     }
                 },
                 onSuggestionClick = viewModel::onSuggestionClick,
+                autocompleteError = autocompleteError,
+                onClearAutocompleteError = viewModel::clearAutocompleteError,
             )
         )
     }

@@ -1,5 +1,7 @@
 package com.paraskcd.kcdsearch.ui.modules.search.screens
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -15,12 +17,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.SnackbarDuration
@@ -41,6 +45,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import com.composables.icons.heroicons.Heroicons
+import com.composables.icons.heroicons.outline.ExclamationTriangle
 import com.paraskcd.kcdsearch.constants.GlobalConstants.IMAGE_SKELETON_ASPECT_RATIOS
 import com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult.SearchResult
 import com.paraskcd.kcdsearch.model.UnifiedSearchResult
@@ -49,6 +56,10 @@ import com.paraskcd.kcdsearch.ui.modules.search.components.appsAccordion.AppsAcc
 import com.paraskcd.kcdsearch.ui.modules.search.components.appsAccordion.AppsAccordionParams
 import com.paraskcd.kcdsearch.ui.modules.search.components.appsAccordion.components.appListRow.AppListRow
 import com.paraskcd.kcdsearch.ui.modules.search.components.appsAccordion.components.appListRow.AppListRowParams
+import com.paraskcd.kcdsearch.ui.modules.search.components.contactsAccordion.ContactsAccordion
+import com.paraskcd.kcdsearch.ui.modules.search.components.contactsAccordion.ContactsAccordionParams
+import com.paraskcd.kcdsearch.ui.modules.search.components.contactsAccordion.components.contactListRow.ContactListRow
+import com.paraskcd.kcdsearch.ui.modules.search.components.contactsAccordion.components.contactListRow.ContactListRowParams
 import com.paraskcd.kcdsearch.ui.modules.search.components.imageResultSkeleton.ImageResultSkeletonParams
 import com.paraskcd.kcdsearch.ui.modules.search.components.infoboxAccordion.InfoboxAccordion
 import com.paraskcd.kcdsearch.ui.modules.search.components.infoboxAccordion.InfoboxAccordionParams
@@ -65,6 +76,8 @@ import com.paraskcd.kcdsearch.ui.modules.search.components.webResultCard.WebResu
 import com.paraskcd.kcdsearch.ui.modules.search.enums.SearchCategory
 import com.paraskcd.kcdsearch.ui.shared.components.kcdsearchLogo.KCDSearchLogo
 import com.paraskcd.kcdsearch.ui.shared.components.kcdsearchLogo.KCDSearchLogoParams
+import com.paraskcd.kcdsearch.ui.shared.components.listItemRow.ListItemRow
+import com.paraskcd.kcdsearch.ui.shared.components.listItemRow.ListItemRowParams
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.UnifiedSearchBar
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.UnifiedSearchBarParams
 import com.paraskcd.kcdsearch.ui.shared.layouts.ScreenColumnLayout
@@ -82,8 +95,10 @@ fun SearchScreen(
     val infoboxes by viewModel.infoboxes.collectAsState()
     val appResults = results.filterIsInstance<UnifiedSearchResult.App>().map { it.item }
     val webResults = results.filterIsInstance<UnifiedSearchResult.Web>().map { it.item }
+    val contactResults = results.filterIsInstance<UnifiedSearchResult.Contact>().map { it.item }
     val isLoading by viewModel.isLoading.collectAsState()
     val errors by viewModel.errors.collectAsState()
+    val autocompleteErrors by viewModel.autocompleteErrors.collectAsState()
     val areSuggestionsLoading by viewModel.isSuggestionsLoading.collectAsState()
     val suggestions by viewModel.suggestions.collectAsState()
     val hasMorePages by viewModel.hasMorePages.collectAsState()
@@ -187,6 +202,8 @@ fun SearchScreen(
                     getAppIcon = { viewModel.getAppIcon(it) },
                     onQuerySubmit = { viewModel.submitSearch(it) },
                     onSuggestionClick = viewModel::onSuggestionClick,
+                    autocompleteError = autocompleteErrors,
+                    onClearAutocompleteError = viewModel::clearAutocompleteError
                 )
             )
             SearchTabs(
@@ -229,6 +246,68 @@ fun SearchScreen(
                                             modifier = Modifier.padding(bottom = 16.dp),
                                             getAppIcon = { viewModel.getAppIcon(it) },
                                             launchApp = { viewModel.launchApp(it) }
+                                        )
+                                    )
+                                }
+                            }
+                            if (viewModel.contactRequiresPermission() && query.isNotBlank()) {
+                                item(key = "contact_permission") {
+                                    ListItemRow(
+                                        params = ListItemRowParams(
+                                            label = "Allow contact access",
+                                            leadingContent = {
+                                                Icon(
+                                                    imageVector = Heroicons.Outline.ExclamationTriangle,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(40.dp)
+                                                )
+                                            },
+                                            onClick = {
+                                                val intent =
+                                                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                        data =
+                                                            "package:${context.packageName}".toUri()
+                                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                    }
+                                                context.startActivity(intent)
+                                            },
+                                            modifier = Modifier.padding(bottom = 16.dp)
+                                        )
+                                    )
+                                }
+                            }
+                            if (contactResults.size > 4) {
+                                item(key = "contacts_accordion") {
+                                    ContactsAccordion(
+                                        params = ContactsAccordionParams(
+                                            contactResults,
+                                            modifier = Modifier.padding(bottom = 16.dp),
+                                            onContactClick = {
+                                                viewModel.openContactDetails(
+                                                    viewModel.getContactUriByNumber(it)
+                                                )
+                                            },
+                                            onCallClick = { viewModel.openDialer(it) },
+                                            onMessageClick = { viewModel.openMessages(it) },
+                                            onWhatsappClick = { viewModel.openWhatsApp(it) },
+                                            isWhatsappInstalled = viewModel.isWhatsappInstalled()
+                                        )
+                                    )
+                                }
+                            } else {
+                                itemsIndexed(
+                                    contactResults,
+                                    key = { index, contact -> "contact_${index}_${contact.name}_${contact.number}"}
+                                ) { _, contactResult ->
+                                    ContactListRow(
+                                        params = ContactListRowParams(
+                                            contactResult,
+                                            modifier = Modifier.padding(bottom = 16.dp),
+                                            onContactClick = { viewModel.openContactDetails(viewModel.getContactUriByNumber(contactResult.number)) },
+                                            onCallClick = { viewModel.openDialer(contactResult.number) },
+                                            onMessageClick = { viewModel.openMessages(contactResult.number) },
+                                            onWhatsAppClick = { viewModel.openWhatsApp(contactResult.number) },
+                                            isWhatsappInstalled = viewModel.isWhatsappInstalled()
                                         )
                                     )
                                 }

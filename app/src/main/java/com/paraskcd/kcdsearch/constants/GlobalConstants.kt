@@ -7,4 +7,5 @@ object GlobalConstants {
         0.9f, 1.6f, 1f, 0.85f, 1.25f, 0.8f,
         1.1f, 1.4f, 0.7f, 1.15f, 0.95f
     )
+    val WHATSAPP_PACKAGES = listOf("com.whatsapp", "com.whatsapp.w4b")
 }

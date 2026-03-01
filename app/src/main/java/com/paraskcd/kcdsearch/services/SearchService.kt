@@ -2,12 +2,15 @@ package com.paraskcd.kcdsearch.services
 
 import android.util.Log
 import com.paraskcd.kcdsearch.data.api.apps.dataSources.AppResult
+import com.paraskcd.kcdsearch.data.api.contacts.dataSources.ContactResult
 import com.paraskcd.kcdsearch.data.api.search.dataSources.infobox.Infobox
 import com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult.SearchResult
 import com.paraskcd.kcdsearch.data.api.search.dataSources.searchResult.SearchResultResponse
 import com.paraskcd.kcdsearch.data.dtos.AppSearchRequestDto
+import com.paraskcd.kcdsearch.data.dtos.ContactSearchRequestDto
 import com.paraskcd.kcdsearch.data.dtos.SearchRequestDto
 import com.paraskcd.kcdsearch.data.repositories.AppSearchRepository
+import com.paraskcd.kcdsearch.data.repositories.ContactSearchRepository
 import com.paraskcd.kcdsearch.data.repositories.SearchRepository
 import com.paraskcd.kcdsearch.model.SuggestionItem
 import com.paraskcd.kcdsearch.model.UnifiedSearchResult
@@ -30,9 +33,11 @@ class SearchService @Inject constructor(
     private val searchQueryService: SearchQueryService,
     private val searchRepository: SearchRepository,
     private val appSearchRepository: AppSearchRepository,
+    private val contactSearchRepository: ContactSearchRepository
 ) {
     private val _webResults = MutableStateFlow<List<SearchResult>>(emptyList())
     private val _appResults = MutableStateFlow<List<AppResult>>(emptyList())
+    private val _contactResults = MutableStateFlow<List<ContactResult>>(emptyList())
 
     private val _results = MutableStateFlow<List<UnifiedSearchResult>>(emptyList())
     val results = _results.asStateFlow()
@@ -68,9 +73,9 @@ class SearchService @Inject constructor(
     val category = _category.asStateFlow()
 
     private var suggestionsJob: Job? = null
-    private var loadingShowJob: Job? = null
 
     fun requestSuggestionsDebounced(scope: CoroutineScope) {
+        clearSuggestions()
         suggestionsJob?.cancel()
         suggestionsJob = scope.launch {
             delay(500)
@@ -100,6 +105,17 @@ class SearchService @Inject constructor(
                         val appItems = appSearchRepository.search(AppSearchRequestDto(query = q, category = null))
                         Log.d("SearchService", "[APP] completed: ${appItems.size} results")
                         _appResults.value = appItems
+                        updateUnifiedResults()
+                    }
+                    launch {
+                        Log.d("SearchService", "[CONTACT] starting contact search")
+                        val contactItems = contactSearchRepository.search(
+                            ContactSearchRequestDto(
+                                query = q
+                            )
+                        )
+                        Log.d("SearchService", "[CONTACT] completed: ${contactItems.size} results")
+                        _contactResults.value = contactItems
                         updateUnifiedResults()
                     }
                 }
@@ -160,9 +176,10 @@ class SearchService @Inject constructor(
         withLoading(_isAutocompleteLoading, _autocompleteErrors) {
             var appItems = emptyList<SuggestionItem.App>()
             var apiItems = emptyList<SuggestionItem.Text>()
+            var contactItems = emptyList<SuggestionItem.Contact>()
 
             fun publishSuggestions() {
-                _suggestions.value = appItems + apiItems
+                _suggestions.value = appItems + contactItems + apiItems
             }
 
             coroutineScope {
@@ -171,6 +188,13 @@ class SearchService @Inject constructor(
                         .take(5)
                         .map { SuggestionItem.App(it) }
                     appItems = matches
+                    publishSuggestions()
+                }
+                launch {
+                    val contactMatches = contactSearchRepository.search(ContactSearchRequestDto(query = query))
+                        .take(5)
+                        .map { SuggestionItem.Contact(it) }
+                    contactItems = contactMatches
                     publishSuggestions()
                 }
                 launch {
@@ -196,6 +220,10 @@ class SearchService @Inject constructor(
         _suggestions.value = emptyList()
     }
 
+    fun clearAutocompleteError() {
+        _autocompleteErrors.value = null
+    }
+
     fun setCategory(category: SearchCategory) {
         _category.value = category
     }
@@ -204,11 +232,16 @@ class SearchService @Inject constructor(
         _error.value = null
     }
 
+    fun contactRequiresPermission(): Boolean = contactSearchRepository.requiresPermission()
+    fun isWhatsappInstalled(): Boolean = contactSearchRepository.isWhatsappInstalled()
+    fun getContactUriByNumber(number: String) = contactSearchRepository.getContactUriByNumber(number)
+
     private fun resetPagination() {
         _currentPage.value = 1
         _webResults.value = emptyList()
         _appResults.value = emptyList()
         _infoboxes.value = emptyList()
+        _contactResults.value = emptyList()
         _totalResults.value = 0
         _hasMorePages.value = true
         _error.value = null
@@ -239,11 +272,10 @@ class SearchService @Inject constructor(
     }
 
     private fun updateUnifiedResults() {
-        val appCount = _appResults.value.size
-        val webCount = _webResults.value.size
-        _results.value = _appResults.value.map { UnifiedSearchResult.App(it) } + _webResults.value.map { UnifiedSearchResult.Web(it) }
-        Log.d("SearchService", "updateUnifiedResults: app=$appCount, web=$webCount, total=${_results.value.size}")
-    }
+        _results.value = _appResults.value.map { UnifiedSearchResult.App(it) } +
+                _contactResults.value.map { UnifiedSearchResult.Contact(it) } +
+                _webResults.value.map { UnifiedSearchResult.Web(it) }
+   }
 
     private fun canLoadMore(): Boolean =
         searchQueryService.query.value.isNotBlank() && !_isLoading.value && _hasMorePages.value

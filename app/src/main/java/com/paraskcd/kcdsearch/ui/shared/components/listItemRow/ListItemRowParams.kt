@@ -8,4 +8,5 @@ data class ListItemRowParams(
     val leadingContent: @Composable () -> Unit,
     val modifier: Modifier = Modifier,
     val onClick: () -> Unit = {},
+    val trailingContent: (@Composable () -> Unit)? = null
 )

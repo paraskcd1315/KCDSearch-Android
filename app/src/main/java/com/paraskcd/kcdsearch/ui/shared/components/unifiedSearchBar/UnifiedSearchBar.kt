@@ -4,6 +4,7 @@ import android.view.View
 import android.view.ViewParent
 import android.view.Window
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,9 +16,14 @@ import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarValue
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
@@ -36,10 +42,22 @@ import kotlinx.coroutines.launch
 @Composable
 fun UnifiedSearchBar(params: UnifiedSearchBarParams) {
     val textFieldState = rememberTextFieldState(initialText = params.query)
+    val autocompleteSnackbarState = remember { SnackbarHostState() }
 
     LaunchedEffect(params.query) {
         if (textFieldState.text.toString() != params.query) {
             textFieldState.edit { replace(0, length, params.query) }
+        }
+    }
+
+    LaunchedEffect(params.autocompleteError) {
+        params.autocompleteError?.let { error ->
+            autocompleteSnackbarState.showSnackbar(
+                message = error.message ?: "Something went wrong",
+                duration = SnackbarDuration.Short,
+                withDismissAction = true
+            )
+            params.onClearAutocompleteError()
         }
     }
 
@@ -92,20 +110,28 @@ fun UnifiedSearchBar(params: UnifiedSearchBarParams) {
             }
         }
 
-        AutocompleteSuggestions(
-            params = AutocompleteSuggestionParams(
-                suggestions = params.suggestions,
-                getAppIcon = params.getAppIcon,
-                onSuggestionClick = { suggestion ->
-                    params.scope.launch {
-                        params.searchBarState.animateToCollapsed()
-                        params.onSuggestionClick(suggestion)
-                    }
-                },
-                isHistory = params.query.isBlank(),
-                isLoading = params.isLoading
+        Box(modifier = Modifier.fillMaxSize()) {
+            AutocompleteSuggestions(
+                params = AutocompleteSuggestionParams(
+                    suggestions = params.suggestions,
+                    getAppIcon = params.getAppIcon,
+                    onSuggestionClick = { suggestion ->
+                        params.scope.launch {
+                            params.searchBarState.animateToCollapsed()
+                            params.onSuggestionClick(suggestion)
+                        }
+                    },
+                    isHistory = params.query.isBlank(),
+                    isLoading = params.isLoading
+                )
             )
-        )
+            SnackbarHost(
+                hostState = autocompleteSnackbarState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+            )
+        }
     }
 }
 
