@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import com.paraskcd.kcdsearch.constants.GlobalConstants.WHATSAPP_PACKAGES
 import com.paraskcd.kcdsearch.data.api.apps.InstalledAppsApi
 import com.paraskcd.kcdsearch.data.api.contacts.dataSources.ContactResult
+import com.paraskcd.kcdsearch.utils.extensionMethods.normalizePhoneNumber
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -104,6 +105,12 @@ class ContactsApiImpl @Inject constructor(
                 )
             }
         }
-        return results
+        return deduplicateByNumber(results)
     }
+
+    private fun deduplicateByNumber(contacts: List<ContactResult>): List<ContactResult> =
+        contacts
+            .groupBy { it.number.normalizePhoneNumber() }
+            .values
+            .map { group -> group.maxByOrNull { c -> c.photoUri != null } ?: group.first() }
 }

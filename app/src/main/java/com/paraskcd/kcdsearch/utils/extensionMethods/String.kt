@@ -37,3 +37,5 @@ fun String.toReadableDate(locale: Locale = Locale.getDefault()): String {
         this
     }
 }
+
+fun String.normalizePhoneNumber(): String = replace(Regex("[^0-9]"), "")
