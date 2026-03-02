@@ -20,11 +20,14 @@ class SearchRepository @Inject constructor(
 ) {
     suspend fun search(request: SearchRequestDto): Result<SearchResultResponse> = withContext(
         Dispatchers.IO) {
-        val cached = searchCacheRepository.getCachedSearchResults(request.query, request.categories)
-        if (cached != null) {
-            Log.d("SearchRepository", "Cache HIT for query: ${request.query}")
-            searchHistoryRepository.upsertQuery(request.query)
-            return@withContext Result.success(cached)
+        val useCache = request.pageno == 1
+        if (useCache) {
+            val cached = searchCacheRepository.getCachedSearchResults(request.query, request.categories)
+            if (cached != null) {
+                Log.d("SearchRepository", "Cache HIT for query: ${request.query}")
+                searchHistoryRepository.upsertQuery(request.query)
+                return@withContext Result.success(cached)
+            }
         }
         runCatching {
             searchApi.search(

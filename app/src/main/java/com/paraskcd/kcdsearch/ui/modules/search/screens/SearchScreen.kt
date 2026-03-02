@@ -37,9 +37,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +62,8 @@ import com.paraskcd.kcdsearch.ui.modules.search.components.contactsAccordion.Con
 import com.paraskcd.kcdsearch.ui.modules.search.components.contactsAccordion.ContactsAccordionParams
 import com.paraskcd.kcdsearch.ui.modules.search.components.contactsAccordion.components.contactListRow.ContactListRow
 import com.paraskcd.kcdsearch.ui.modules.search.components.contactsAccordion.components.contactListRow.ContactListRowParams
+import com.paraskcd.kcdsearch.ui.modules.search.components.fullscreenImageModal.FullscreenImageModal
+import com.paraskcd.kcdsearch.ui.modules.search.components.fullscreenImageModal.FullscreenImageModalParams
 import com.paraskcd.kcdsearch.ui.modules.search.components.imageResultSkeleton.ImageResultSkeletonParams
 import com.paraskcd.kcdsearch.ui.modules.search.components.infoboxAccordion.InfoboxAccordion
 import com.paraskcd.kcdsearch.ui.modules.search.components.infoboxAccordion.InfoboxAccordionParams
@@ -108,7 +112,8 @@ fun SearchScreen(
     val staggeredGridState = rememberLazyStaggeredGridState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-    val failedImageUrls = remember { mutableStateSetOf<String>() }
+    var failedImageUrls by remember { mutableStateOf(setOf<String>()) }
+    var selectedImageForModal by remember { mutableStateOf<SearchResult?>(null) }
     val selectedTabIndex = remember(category) {
         searchTabs.indexOfFirst { it.value == category }.takeIf { it >= 0 } ?: 0
     }
@@ -132,9 +137,7 @@ fun SearchScreen(
 
     val displayableImages = remember(webResults, failedImageUrls) {
         webResults.filter { result ->
-            result.getImageUrl()?.let { url ->
-                url !in failedImageUrls
-            } ?: false
+            result.getImageUrl()?.let { url -> url !in failedImageUrls } ?: false
         }
     }
 
@@ -168,7 +171,7 @@ fun SearchScreen(
     }
 
     LaunchedEffect(query) {
-        failedImageUrls.clear()
+        failedImageUrls = emptySet()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -381,9 +384,11 @@ fun SearchScreen(
                                     params = SearchImageResultParams(
                                         result = result,
                                         modifier = Modifier.padding(bottom = 12.dp),
-                                        onClick = { viewModel.openUrl(result.url ?: "") },
+                                        onClick = { selectedImageForModal = result },
                                         onLoadFailed = {
-                                            result.getImageUrl()?.let { failedImageUrls.add(it) }
+                                            result.getImageUrl()?.let { url ->
+                                                failedImageUrls = failedImageUrls + url
+                                            }
                                         }
                                     ),
                                 )
@@ -422,5 +427,20 @@ fun SearchScreen(
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
         )
+        selectedImageForModal?.let { result ->
+            result.getImageUrl()?.let { imageUrl ->
+                FullscreenImageModal(
+                    params = FullscreenImageModalParams(
+                        imageUrl = imageUrl,
+                        pageUrl = result.url,
+                        title = result.title,
+                        onDismiss = { selectedImageForModal = null },
+                        onOpenUrl = { viewModel.openUrl(it) },
+                        onShare = { viewModel.shareImage(it) },
+                        onDownload = { viewModel.downloadImage(it) }
+                    )
+                )
+            }
+        }
     }
 }

@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Environment
+import android.widget.Toast
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.net.toUri
@@ -16,9 +18,11 @@ import com.paraskcd.kcdsearch.ui.modules.search.enums.SearchCategory
 import com.paraskcd.kcdsearch.utils.extensionMethods.toBitmap
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -166,6 +170,41 @@ class SearchViewModel @Inject constructor(
         searchService.setCategory(category)
         viewModelScope.launch {
             searchService.search()
+        }
+    }
+
+    fun shareImage(imageUrl: String) {
+        viewModelScope.launch {
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/*"
+                putExtra(Intent.EXTRA_STREAM, imageUrl)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(Intent.createChooser(intent, null))
+        }
+    }
+
+    fun downloadImage(imageUrl: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val url = java.net.URL(imageUrl)
+                val connection = url.openConnection() as java.net.HttpURLConnection
+                connection.connect()
+                val input = connection.inputStream
+                val fileName = "image_${System.currentTimeMillis()}.jpg"
+                val output = java.io.File(
+                    context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+                    fileName
+                )
+                output.outputStream().use { it.write(input.readBytes()) }
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Saved to ${output.absolutePath}", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Download failed", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 }

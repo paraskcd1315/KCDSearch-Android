@@ -1,9 +1,7 @@
 package com.paraskcd.kcdsearch.ui.modules.search.components.contactsAccordion.components.contactListRow
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -17,12 +15,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.composables.icons.heroicons.Heroicons
 import com.composables.icons.heroicons.outline.ChatBubbleBottomCenterText
 import com.composables.icons.heroicons.outline.Phone
 import com.composables.icons.heroicons.outline.User
+import com.paraskcd.kcdsearch.ui.shared.components.asyncImage.AsyncImageWithPlaceholder
+import com.paraskcd.kcdsearch.ui.shared.components.asyncImage.AsyncImageWithPlaceholderParams
 import com.paraskcd.kcdsearch.ui.shared.components.listItemRow.ListItemRow
 import com.paraskcd.kcdsearch.ui.shared.components.listItemRow.ListItemRowParams
 import com.paraskcd.kcdsearch.ui.shared.icons.FontAwesomeWhatsapp
@@ -30,33 +29,39 @@ import com.paraskcd.kcdsearch.ui.shared.icons.FontAwesomeWhatsapp
 @Composable
 fun ContactListRow(params: ContactListRowParams) {
     val context = LocalContext.current
+    val placeholder = @Composable {
+        Surface(
+            modifier = Modifier.size(40.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
+        ) {
+            Icon(
+                imageVector = Heroicons.Outline.User,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
+
     ListItemRow(
         params = ListItemRowParams(
             label = params.contact.name,
             leadingContent = {
                 params.contact.photoUri?.let { uri ->
-                    Image(
-                        painter = rememberAsyncImagePainter(
-                            ImageRequest.Builder(context).data(uri).crossfade(true).build()
-                        ),
-                        contentDescription = params.contact.name,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
+                    AsyncImageWithPlaceholder(
+                        params = AsyncImageWithPlaceholderParams(
+                            model = ImageRequest.Builder(context).data(uri).crossfade(true).build(),
+                            contentDescription = params.contact.name,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                            loadingContent = placeholder,
+                            errorContent = placeholder
+                        )
                     )
                 } ?: run {
-                    Surface(
-                        modifier = Modifier.size(40.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh
-                    ) {
-                        Icon(
-                            imageVector = Heroicons.Outline.User,
-                            contentDescription = params.contact.name,
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
+                    placeholder()
                 }
             },
             onClick = params.onContactClick,

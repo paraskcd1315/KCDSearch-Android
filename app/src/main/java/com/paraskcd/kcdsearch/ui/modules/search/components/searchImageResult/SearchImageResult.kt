@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,6 +24,10 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
+import com.paraskcd.kcdsearch.ui.shared.components.asyncImage.AsyncImageWithPlaceholder
+import com.paraskcd.kcdsearch.ui.shared.components.asyncImage.AsyncImageWithPlaceholderParams
+import com.paraskcd.kcdsearch.ui.shared.components.transparencyGrid.TransparencyGrid
+import com.paraskcd.kcdsearch.ui.shared.components.transparencyGrid.TransparencyGridParams
 import com.paraskcd.kcdsearch.utils.extensionMethods.getAspectRatio
 import com.paraskcd.kcdsearch.utils.extensionMethods.getImageUrl
 
@@ -47,24 +52,27 @@ fun SearchImageResult(params: SearchImageResultParams) {
                 .aspectRatio(aspectRatio)
                 .clip(RoundedCornerShape(ImageCornerRadius))
         ) {
-            SubcomposeAsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(imageUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = result.title ?: "",
-                modifier = Modifier.fillMaxWidth(),
-                contentScale = ContentScale.Crop
-            ) {
-                when (val state = painter.state) {
-                    is AsyncImagePainter.State.Success -> SubcomposeAsyncImageContent()
-                    is AsyncImagePainter.State.Error -> {
-                        LaunchedEffect(Unit) { params.onLoadFailed?.invoke() }
-                        Box(Modifier.size(0.dp))
-                    }
-                    else -> Box(Modifier.size(0.dp))
-                }
-            }
+            TransparencyGrid(
+                params = TransparencyGridParams(
+                    modifier = Modifier.matchParentSize(),
+                    squareSize = 8.dp,
+                    color1 = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    color2 = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                )
+            )
+            AsyncImageWithPlaceholder(
+                params = AsyncImageWithPlaceholderParams(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = result.title ?: "",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    onLoadFailed = params.onLoadFailed,
+                    collapseOnError = false
+                )
+            )
             if (!result.resolution.isNullOrBlank()) {
                 Text(
                     text = result.resolution,

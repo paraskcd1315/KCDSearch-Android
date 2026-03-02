@@ -15,12 +15,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import com.paraskcd.kcdsearch.data.api.search.dataSources.infobox.InfoboxAttribute
+import com.paraskcd.kcdsearch.ui.shared.components.asyncImage.AsyncImageWithPlaceholder
+import com.paraskcd.kcdsearch.ui.shared.components.asyncImage.AsyncImageWithPlaceholderParams
 import com.paraskcd.kcdsearch.ui.shared.components.expandableAccordionSection.ExpandableAccordionSection
 import com.paraskcd.kcdsearch.ui.shared.components.expandableAccordionSection.ExpandableAccordionSectionParams
 
@@ -55,24 +53,19 @@ fun InfoboxAccordion(
         )
     ) {
         if (!infobox.imgSrc.isNullOrBlank()) {
-            SubcomposeAsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(infobox.imgSrc)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = infobox.title ?: "",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 200.dp),
-                contentScale = ContentScale.Fit
-            ) {
-                when (painter.state) {
-                    is AsyncImagePainter.State.Success -> {
-                        SubcomposeAsyncImageContent()
-                    }
-                    else -> {}
-                }
-            }
+            AsyncImageWithPlaceholder(
+                params = AsyncImageWithPlaceholderParams(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(infobox.imgSrc)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = infobox.title ?: "",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 200.dp),
+                    contentScale = ContentScale.Fit
+                )
+            )
         }
         infobox.attributes.forEach { attr ->
             InfoboxAttributeRow(attribute = attr)
@@ -114,16 +107,18 @@ private fun InfoboxAttributeRow(
         attribute.image?.let { img ->
             img.src?.let { src ->
                 Spacer(modifier = Modifier.height(4.dp))
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(src)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = img.alt ?: "",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 180.dp),
-                    contentScale = ContentScale.Fit
+                AsyncImageWithPlaceholder(
+                    params = AsyncImageWithPlaceholderParams(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(src)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = img.alt ?: "",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 180.dp),
+                        contentScale = ContentScale.Fit
+                    )
                 )
             }
         }

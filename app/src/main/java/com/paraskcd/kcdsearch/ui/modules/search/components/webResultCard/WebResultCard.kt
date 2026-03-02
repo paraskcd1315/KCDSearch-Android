@@ -19,8 +19,9 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.paraskcd.kcdsearch.ui.shared.components.asyncImage.AsyncImageWithPlaceholder
+import com.paraskcd.kcdsearch.ui.shared.components.asyncImage.AsyncImageWithPlaceholderParams
 import com.paraskcd.kcdsearch.ui.shared.components.cardContainer.CardContainer
 import com.paraskcd.kcdsearch.ui.shared.components.cardContainer.CardContainerParams
 import com.paraskcd.kcdsearch.utils.extensionMethods.toReadableDate
@@ -73,16 +74,18 @@ fun WebResultCard(params: WebResultCardParams) {
                 verticalAlignment = Alignment.Top
             ) {
                 if (!result.thumbnail.isNullOrBlank()) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(result.thumbnail)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = title,
-                        modifier = Modifier
-                            .size(96.dp)
-                            .heightIn(max = 96.dp),
-                        contentScale = ContentScale.Crop
+                    AsyncImageWithPlaceholder(
+                        params = AsyncImageWithPlaceholderParams(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(result.thumbnail)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = title,
+                            modifier = Modifier
+                                .size(96.dp)
+                                .heightIn(max = 96.dp),
+                            contentScale = ContentScale.Crop
+                        )
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                 }

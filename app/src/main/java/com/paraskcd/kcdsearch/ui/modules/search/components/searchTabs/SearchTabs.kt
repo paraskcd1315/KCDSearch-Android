@@ -56,11 +56,11 @@ fun SearchTabs(params: SearchTabsParams) {
         when (params.selectedCategory) {
             SearchCategory.Images -> {
                 LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Adaptive(minSize = 120.dp),
+                    columns = StaggeredGridCells.Fixed(2),
                     state = params.staggeredGridState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = contentPadding,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     params.imagesContent?.invoke(this)
                 }
