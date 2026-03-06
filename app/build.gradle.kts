@@ -1,10 +1,10 @@
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt)
 }
+
 
 android {
     namespace = "com.paraskcd.kcdsearch"
@@ -16,6 +16,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "PIRATE_WEATHER_API_KEY", "\"${project.findProperty("pirateWeatherApiKey") ?: ""}\"")
     }
 
     buildTypes {
@@ -74,6 +75,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
+    implementation(libs.play.services.location)
+    implementation(libs.icons.lucide.android)
     ksp(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.androidx.hilt.compiler)

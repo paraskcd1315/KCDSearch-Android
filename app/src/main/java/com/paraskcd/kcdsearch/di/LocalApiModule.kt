@@ -2,6 +2,7 @@ package com.paraskcd.kcdsearch.di
 
 import android.content.Context
 import android.content.pm.PackageManager
+import com.google.gson.Gson
 import com.paraskcd.kcdsearch.data.api.apps.InstalledAppsApi
 import com.paraskcd.kcdsearch.data.api.apps.InstalledAppsApiImpl
 import com.paraskcd.kcdsearch.data.api.contacts.ContactsApi
@@ -28,4 +29,8 @@ object LocalApiModule {
     @Provides
     @Singleton
     fun provideContactsApi(impl: ContactsApiImpl): ContactsApi = impl
+
+    @Provides
+    @Singleton
+    fun provideGson(): Gson = Gson()
 }

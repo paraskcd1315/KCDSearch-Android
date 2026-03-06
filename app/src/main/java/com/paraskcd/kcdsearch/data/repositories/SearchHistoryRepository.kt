@@ -15,7 +15,8 @@ class SearchHistoryRepository @Inject constructor(
         searchQueryDao.getAllByUpdatedDesc().map { it.take(limit) }
 
     suspend fun upsertQuery(query: String) {
-        if (query.isNotBlank()) {
+        val trimmed = query.trim()
+        if (trimmed.isNotBlank() && trimmed.length > 2) {
             searchQueryDao.upsert(SearchQueryEntity(query))
         }
     }

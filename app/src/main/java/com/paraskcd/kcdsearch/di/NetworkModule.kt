@@ -12,7 +12,12 @@ import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class SearchRetrofit
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -27,6 +32,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @SearchRetrofit
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit = Retrofit.Builder()
         .baseUrl(SearchApiConstants.BASE_URL)
         .client(okHttpClient)
@@ -35,15 +41,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideSearchApi(retrofit: Retrofit): SearchApi =
+    fun provideSearchApi(@SearchRetrofit retrofit: Retrofit): SearchApi =
         retrofit.create(SearchApi::class.java)
 
     @Provides
     @Singleton
-    fun provideAutocompleteApi(retrofit: Retrofit): AutocompleteApi =
+    fun provideAutocompleteApi(@SearchRetrofit retrofit: Retrofit): AutocompleteApi =
         retrofit.create(AutocompleteApi::class.java)
-
-    @Provides
-    @Singleton
-    fun provideGson(): Gson = Gson()
 }

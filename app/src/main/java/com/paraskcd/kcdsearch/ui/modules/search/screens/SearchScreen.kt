@@ -223,7 +223,8 @@ fun SearchScreen(
                     onQuerySubmit = { viewModel.submitSearch(it) },
                     onSuggestionClick = viewModel::onSuggestionClick,
                     autocompleteError = autocompleteErrors,
-                    onClearAutocompleteError = viewModel::clearAutocompleteError
+                    onClearAutocompleteError = viewModel::clearAutocompleteError,
+                    onSearchBarExpanded = viewModel::onSearchBarExpanded
                 )
             )
             SearchTabs(

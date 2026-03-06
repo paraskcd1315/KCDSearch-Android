@@ -74,6 +74,8 @@ fun UnifiedSearchBar(params: UnifiedSearchBarParams) {
     LaunchedEffect(params.searchBarState.currentValue) {
         if (params.searchBarState.currentValue == SearchBarValue.Expanded) {
             params.onSearchBarExpanded()
+        } else {
+            params.onSearchbarCollapse()
         }
     }
 

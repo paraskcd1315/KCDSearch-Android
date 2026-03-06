@@ -11,11 +11,14 @@ import androidx.lifecycle.viewModelScope
 import com.paraskcd.kcdsearch.model.SuggestionItem
 import com.paraskcd.kcdsearch.services.SearchQueryService
 import com.paraskcd.kcdsearch.services.SearchService
+import com.paraskcd.kcdsearch.services.WeatherService
 import com.paraskcd.kcdsearch.ui.modules.search.SearchActivity
 import com.paraskcd.kcdsearch.utils.extensionMethods.toBitmap
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -24,17 +27,35 @@ class HomeViewModel @Inject constructor(
     @param:ApplicationContext val context: Context,
     private val packageManager: PackageManager,
     private val searchQueryService: SearchQueryService,
-    private val searchService: SearchService
+    private val searchService: SearchService,
+    private val weatherService: WeatherService
 ): ViewModel() {
     val query = searchQueryService.query
     val isLoading = searchService.isAutocompleteLoading
+    val isLoadingResults = searchService.isLoading
+    val results = searchService.results
     val suggestions = searchService.suggestions
     val autocompleteErrors = searchService.autocompleteErrors
+    val recentSearches = searchService.recentSearches
+
+    val weatherIsLoading = weatherService.isLoading
+    val weatherError = weatherService.error
+    val weatherForecast = weatherService.forecast
+    val weatherRequiresPermission = weatherService.requiresPermission
+    val weatherCityName = weatherService.cityName
+    val useFahrenheit = weatherService.useFahrenheit
+
 
     init {
         viewModelScope.launch {
             onSearchBarExpanded()
+            loadRecentSearches()
+            loadWeather()
         }
+    }
+
+    fun loadRecentSearches() {
+        searchService.loadRecentSearches(5, viewModelScope)
     }
 
     fun onSearchBarExpanded() {
@@ -75,7 +96,10 @@ class HomeViewModel @Inject constructor(
                 }
                 context.startActivity(intent)
             }
-            is SuggestionItem.App -> launchApp(suggestion.item.packageName)
+            is SuggestionItem.App -> {
+                launchApp(suggestion.item.packageName)
+                searchService.clear(viewModelScope)
+            }
             is SuggestionItem.Contact -> openContactDetails(getContactUriByNumber(suggestion.item.number))
         }
     }
@@ -85,6 +109,29 @@ class HomeViewModel @Inject constructor(
         drawable.toBitmap().asImageBitmap()
     } catch (e: Exception) {
         null
+    }
+
+    fun onSearchbarCollapse() {
+        if (isLoadingResults.value || results.value.isNotEmpty()) {
+            searchService.clear(viewModelScope)
+        }
+    }
+
+    suspend fun loadWeather() {
+        weatherService.loadForecast()
+    }
+
+    fun onLocationPermissionResult(granted: Boolean) {
+        viewModelScope.launch {
+            if (granted) {
+                loadWeather()
+            }
+        }
+    }
+
+
+    fun clearWeatherError() {
+        weatherService.clearError()
     }
 
     private fun launchApp(packageName: String) {

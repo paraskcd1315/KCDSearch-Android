@@ -1,5 +1,16 @@
 package com.paraskcd.kcdsearch.utils.extensionMethods
 
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.composables.icons.lucide.Cloud
+import com.composables.icons.lucide.CloudDrizzle
+import com.composables.icons.lucide.CloudFog
+import com.composables.icons.lucide.CloudRain
+import com.composables.icons.lucide.CloudSnow
+import com.composables.icons.lucide.CloudSun
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Moon
+import com.composables.icons.lucide.Sun
+import com.composables.icons.lucide.Wind
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -39,3 +50,35 @@ fun String.toReadableDate(locale: Locale = Locale.getDefault()): String {
 }
 
 fun String.normalizePhoneNumber(): String = replace(Regex("[^0-9]"), "")
+
+fun String?.toWeatherIcon(): ImageVector = when (this) {
+    "clear-day"           -> Lucide.Sun
+    "clear-night"         -> Lucide.Moon
+    "partly-cloudy-day"   -> Lucide.CloudSun
+    "partly-cloudy-night" -> Lucide.Cloud
+    "cloudy"              -> Lucide.Cloud
+    "rain"                -> Lucide.CloudRain
+    "sleet"               -> Lucide.CloudDrizzle
+    "snow"                -> Lucide.CloudSnow
+    "wind"                -> Lucide.Wind
+    "fog"                 -> Lucide.CloudFog
+    else                  -> Lucide.Sun
+}
+
+fun String?.toWeatherDescription(): String = when (this) {
+    "clear-day" -> "Clear"
+    "clear-night" -> "Clear Night"
+    "rain" -> "Rain"
+    "snow" -> "Snow"
+    "sleet" -> "Sleet"
+    "wind" -> "Windy"
+    "fog" -> "Fog"
+    "cloudy" -> "Cloudy"
+    "partly-cloudy-day" -> "Partly Cloudy"
+    "partly-cloudy-night" -> "Partly Cloudy"
+    "hail" -> "Hail"
+    "thunderstorm" -> "Thunderstorm"
+    "tornado" -> "Tornado"
+    "drizzle" -> "Drizzle"
+    else -> "Unknown"
+}

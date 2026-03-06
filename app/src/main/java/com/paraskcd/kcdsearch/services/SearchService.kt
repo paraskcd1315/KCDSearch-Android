@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -72,7 +73,16 @@ class SearchService @Inject constructor(
     private val _category = MutableStateFlow(SearchCategory.General)
     val category = _category.asStateFlow()
 
+    private val _recentSearches = MutableStateFlow<List<String>>(emptyList())
+    val recentSearches = _recentSearches.asStateFlow()
+
     private var suggestionsJob: Job? = null
+
+    fun loadRecentSearches(limit: Int, scope: CoroutineScope) {
+        scope.launch {
+            _recentSearches.update { searchRepository.getRecentSearchQueries(limit) }
+        }
+    }
 
     fun requestSuggestionsDebounced(scope: CoroutineScope) {
         clearSuggestions()
