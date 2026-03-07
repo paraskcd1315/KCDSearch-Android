@@ -36,8 +36,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -78,6 +80,7 @@ fun HomeScreen(
     val weatherForecast by viewModel.weatherForecast.collectAsState()
     val weatherRequiresPermission by viewModel.weatherRequiresPermission.collectAsState()
     val weatherCityName by viewModel.weatherCityName.collectAsState()
+    var pendingDelete by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val searchBarState = rememberSearchBarState()
@@ -94,6 +97,21 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         viewModel.loadRecentSearches()
     }
+
+    LaunchedEffect(pendingDelete) {
+        val query = pendingDelete ?: return@LaunchedEffect
+        viewModel.deleteRecentSearch(query)
+        val result = snackbarHostState.showSnackbar(
+            message = "\"$query\" removed",
+            actionLabel = "Undo",
+            duration = SnackbarDuration.Short
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            viewModel.restoreRecentSearch(query)
+        }
+        pendingDelete = null
+    }
+
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -193,18 +211,10 @@ fun HomeScreen(
 
                         LaunchedEffect(dismissState.currentValue) {
                             if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
-                                viewModel.deleteRecentSearch(queryText)
-                                val result = snackbarHostState.showSnackbar(
-                                    message = "\"$queryText\" removed",
-                                    actionLabel = "Undo",
-                                    duration = SnackbarDuration.Short
-                                )
-                                if (result == SnackbarResult.ActionPerformed) {
-                                    viewModel.restoreRecentSearch(queryText)
-                                }
+                                pendingDelete = queryText
                             }
                         }
-
+                        
                         SwipeToDismissBox(
                             state = dismissState,
                             backgroundContent = {
