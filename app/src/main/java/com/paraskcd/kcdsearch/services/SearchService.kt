@@ -170,7 +170,7 @@ class SearchService @Inject constructor(
 
         if (query.isEmpty()) {
             _suggestions.value = searchRepository.getRecentSearchQueries(limit = 15)
-                .map { SuggestionItem.Text(it) }
+                .map { SuggestionItem.Text(it, isHistory = true) }
 
             return
         }
