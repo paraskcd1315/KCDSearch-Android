@@ -3,9 +3,13 @@ package com.paraskcd.kcdsearch.ui.modules.home.screens
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -17,16 +21,24 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberSearchBarState
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -34,6 +46,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.composables.icons.heroicons.Heroicons
 import com.composables.icons.heroicons.outline.Clock
+import com.composables.icons.heroicons.outline.Trash
 import com.paraskcd.kcdsearch.model.SuggestionItem
 import com.paraskcd.kcdsearch.ui.modules.home.HomeViewModel
 import com.paraskcd.kcdsearch.ui.modules.home.components.weatherWidget.WeatherWidget
@@ -65,6 +78,7 @@ fun HomeScreen(
     val weatherForecast by viewModel.weatherForecast.collectAsState()
     val weatherRequiresPermission by viewModel.weatherRequiresPermission.collectAsState()
     val weatherCityName by viewModel.weatherCityName.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val searchBarState = rememberSearchBarState()
 
@@ -109,7 +123,8 @@ fun HomeScreen(
                 gradientColors = listOf(
                     MaterialTheme.colorScheme.surfaceContainerHigh,
                     MaterialTheme.colorScheme.surface
-                )
+                ),
+                snackbarHostState = snackbarHostState
             )
         ) {
             KCDSearchLogo(
@@ -174,30 +189,67 @@ fun HomeScreen(
                         items = recentSearches,
                         key = { index, queryText -> "RecentSearch_${index}_$queryText" }
                     ) { _, queryText, _, _ ->
-                        ListItem(
-                            headlineContent = {
-                                Text(
-                                    text = queryText,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface
+                        val dismissState = rememberSwipeToDismissBoxState()
+
+                        LaunchedEffect(dismissState.currentValue) {
+                            if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
+                                viewModel.deleteRecentSearch(queryText)
+                                val result = snackbarHostState.showSnackbar(
+                                    message = "\"$queryText\" removed",
+                                    actionLabel = "Undo",
+                                    duration = SnackbarDuration.Short
                                 )
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    viewModel.restoreRecentSearch(queryText)
+                                }
+                            }
+                        }
+
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            backgroundContent = {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.errorContainer),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Heroicons.Outline.Trash,
+                                        contentDescription = "Delete",
+                                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.padding(end = 16.dp)
+                                    )
+                                }
                             },
-                            leadingContent = {
-                                Icon(
-                                    imageVector = Heroicons.Outline.Clock,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    viewModel.onSuggestionClick(SuggestionItem.Text(queryText))
+                            enableDismissFromStartToEnd = false
+                        ) {
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        text = queryText,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
                                 },
-                            colors = ListItemDefaults.colors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                leadingContent = {
+                                    Icon(
+                                        imageVector = Heroicons.Outline.Clock,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.onSuggestionClick(SuggestionItem.Text(queryText))
+                                    },
+                                colors = ListItemDefaults.colors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }

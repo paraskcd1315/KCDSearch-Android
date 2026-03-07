@@ -45,7 +45,6 @@ class HomeViewModel @Inject constructor(
     val weatherCityName = weatherService.cityName
     val useFahrenheit = weatherService.useFahrenheit
 
-
     init {
         viewModelScope.launch {
             onSearchBarExpanded()
@@ -129,6 +128,13 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun deleteRecentSearch(query: String) {
+        searchService.deleteRecentSearch(query, 5, viewModelScope)
+    }
+
+    fun restoreRecentSearch(query: String) {
+        searchService.restoreRecentSearch(query, 5, viewModelScope)
+    }
 
     fun clearWeatherError() {
         weatherService.clearError()

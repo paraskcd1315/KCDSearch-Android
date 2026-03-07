@@ -17,4 +17,7 @@ interface SearchQueryDao {
 
     @Query("SELECT * FROM search_queries ORDER BY updatedAt DESC LIMIT :limit")
     suspend fun getRecent(limit: Int = 20): List<SearchQueryEntity>
+
+    @Query("DELETE FROM search_queries WHERE `query` = :query")
+    suspend fun deleteByQuery(query: String)
 }

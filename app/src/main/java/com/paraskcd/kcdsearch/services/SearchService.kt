@@ -11,6 +11,7 @@ import com.paraskcd.kcdsearch.data.dtos.ContactSearchRequestDto
 import com.paraskcd.kcdsearch.data.dtos.SearchRequestDto
 import com.paraskcd.kcdsearch.data.repositories.AppSearchRepository
 import com.paraskcd.kcdsearch.data.repositories.ContactSearchRepository
+import com.paraskcd.kcdsearch.data.repositories.SearchHistoryRepository
 import com.paraskcd.kcdsearch.data.repositories.SearchRepository
 import com.paraskcd.kcdsearch.model.SuggestionItem
 import com.paraskcd.kcdsearch.model.UnifiedSearchResult
@@ -34,7 +35,8 @@ class SearchService @Inject constructor(
     private val searchQueryService: SearchQueryService,
     private val searchRepository: SearchRepository,
     private val appSearchRepository: AppSearchRepository,
-    private val contactSearchRepository: ContactSearchRepository
+    private val contactSearchRepository: ContactSearchRepository,
+    private val searchHistoryRepository: SearchHistoryRepository
 ) {
     private val _webResults = MutableStateFlow<List<SearchResult>>(emptyList())
     private val _appResults = MutableStateFlow<List<AppResult>>(emptyList())
@@ -246,6 +248,13 @@ class SearchService @Inject constructor(
     fun isWhatsappInstalled(): Boolean = contactSearchRepository.isWhatsappInstalled()
     fun getContactUriByNumber(number: String) = contactSearchRepository.getContactUriByNumber(number)
 
+    fun deleteRecentSearch(query: String, limit: Int, scope: CoroutineScope) {
+        scope.launch {
+            searchHistoryRepository.deleteQuery(query)
+            _recentSearches.update { searchRepository.getRecentSearchQueries(limit) }
+        }
+    }
+
     private fun resetPagination() {
         _currentPage.value = 1
         _webResults.value = emptyList()
@@ -286,6 +295,13 @@ class SearchService @Inject constructor(
                 _contactResults.value.map { UnifiedSearchResult.Contact(it) } +
                 _webResults.value.map { UnifiedSearchResult.Web(it) }
    }
+
+    fun restoreRecentSearch(query: String, limit: Int, scope: CoroutineScope) {
+        scope.launch {
+            searchHistoryRepository.upsertQuery(query)
+            _recentSearches.update { searchRepository.getRecentSearchQueries(limit) }
+        }
+    }
 
     private fun canLoadMore(): Boolean =
         searchQueryService.query.value.isNotBlank() && !_isLoading.value && _hasMorePages.value

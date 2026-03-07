@@ -23,4 +23,9 @@ class SearchHistoryRepository @Inject constructor(
 
     suspend fun getRecentQueriesSync(limit: Int = 20): List<String> =
         searchQueryDao.getRecent(limit).map { it.query }
+
+    suspend fun deleteQuery(query: String) {
+        searchQueryDao.deleteByQuery(query)
+    }
+
 }

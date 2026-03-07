@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,7 +23,10 @@ fun ScreenColumnLayout(
     Scaffold(
         modifier = params.modifier.scaffoldModifiers(),
         containerColor = params.containerColor,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = {
+            params.snackbarHostState?.let { SnackbarHost(it) }
+        }
     ) { innerPadding ->
         Box(
             modifier = Modifier.backgroundGradientModifiers(params.gradientColors ?: listOf(Color.Transparent))
