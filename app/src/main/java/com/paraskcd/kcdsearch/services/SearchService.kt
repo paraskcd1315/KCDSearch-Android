@@ -176,7 +176,7 @@ class SearchService @Inject constructor(
         if (query.isEmpty()) {
             _suggestions.value = searchRepository.getRecentSearchQueries(limit = 15)
                 .map { SuggestionItem.Text(it) }
-
+            _isAutocompleteLoading.value = false
             return
         }
 

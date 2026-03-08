@@ -11,6 +11,9 @@ interface PirateWeatherApi {
         @Path("apiKey") apiKey: String,
         @Path("lat") lat: Double,
         @Path("long") long: Double,
-        @Query("units") units: String = "si"
+        @Query("units") units: String = "si",
+        @Query("exclude") exclude: String = "hourly,daily,minutely,flags",
+        @Query("lang") lang: String = "en",
+        @Query("icon") icon: String = "pirate"
     ): PirateWeatherResponse
 }

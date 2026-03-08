@@ -24,9 +24,11 @@ import com.composables.icons.heroicons.outline.User
 import com.paraskcd.kcdsearch.model.SuggestionItem
 import com.paraskcd.kcdsearch.ui.shared.components.iconCircle.IconCircle
 import com.paraskcd.kcdsearch.ui.shared.components.iconCircle.IconCircleParams
+import com.paraskcd.kcdsearch.ui.shared.components.suggestionItems.SuggestionListItem
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.suggestionSkeletonItem.SuggestionSkeletonItem
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.suggestionSkeletonItem.SuggestionSkeletonItemParams
 import com.paraskcd.kcdsearch.utils.extensionMethods.segmentedListItems
+import com.paraskcd.kcdsearch.utils.extensionMethods.toListItemParams
 
 @Composable
 fun AutocompleteSuggestions(
@@ -49,82 +51,14 @@ fun AutocompleteSuggestions(
                 }
             }
         ) { _, suggestion, _, _ ->
-            when (suggestion) {
-                is SuggestionItem.Text -> ListItem(
-                    headlineContent = { Text(suggestion.value) },
-                    colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                    leadingContent = {
-                        IconCircle(
-                            IconCircleParams(
-                                icon = if (params.isHistory) Heroicons.Outline.Clock
-                                else Heroicons.Outline.MagnifyingGlass
-                            )
-                        )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { params.onSuggestionClick(suggestion) }
+            SuggestionListItem(
+                params = suggestion.toListItemParams(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    onClick = { params.onSuggestionClick(suggestion) },
+                    getAppIcon = params.getAppIcon,
+                    textIcon = if (params.isHistory) Heroicons.Outline.Clock else Heroicons.Outline.MagnifyingGlass
                 )
-                is SuggestionItem.App -> {
-                    val icon = params.getAppIcon(suggestion.item.packageName)
-                    ListItem(
-                        headlineContent = { Text(suggestion.item.label) },
-                        supportingContent = { Text(suggestion.item.packageName) },
-                        leadingContent = {
-                            if (icon != null) {
-                                Image(
-                                    bitmap = icon,
-                                    contentDescription = suggestion.item.label,
-                                    modifier = Modifier.size(40.dp)
-                                )
-                            }
-                        },
-                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { params.onSuggestionClick(suggestion) }
-                    )
-                }
-                is SuggestionItem.Contact -> {
-                    ListItem(
-                        headlineContent = { Text(suggestion.item.name) },
-                        supportingContent = { Text(suggestion.item.number) },
-                        leadingContent = {
-                            IconCircle(
-                                IconCircleParams(Heroicons.Outline.User)
-                            )
-                        },
-                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { params.onSuggestionClick(suggestion) }
-                    )
-                }
-                is SuggestionItem.SearchAction -> {
-                    val icon = params.getAppIcon(suggestion.item.packageName)
-                    ListItem(
-                        headlineContent = { Text(suggestion.item.title) },
-                        supportingContent = { Text(suggestion.item.subtitle) },
-                        leadingContent = {
-                            if (icon != null) {
-                                Image(
-                                    bitmap = icon,
-                                    contentDescription = suggestion.item.subtitle,
-                                    modifier = Modifier.size(40.dp)
-                                )
-                            } else {
-                                IconCircle(
-                                    IconCircleParams(Heroicons.Outline.ArrowTopRightOnSquare)
-                                )
-                            }
-                        },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { params.onSuggestionClick(suggestion) }
-                    )
-                }
-            }
+            )
         }
         if (params.isLoading) {
             items(

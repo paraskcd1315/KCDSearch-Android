@@ -46,6 +46,7 @@
         <activity
             android:name=".ui.activities.assist.AssistActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.KCDSearch.AssistSearch">
             <intent-filter>
                 <action android:name="android.intent.action.ASSIST" />

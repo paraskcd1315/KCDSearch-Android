@@ -101,10 +101,17 @@ class HomeViewModel @Inject constructor(
             is SuggestionItem.Contact -> openContactDetails(getContactUriByNumber(suggestion.item.number))
             is SuggestionItem.SearchAction -> {
                 searchQueryService.setQuery(suggestion.item.query)
-                val intent = quickSearchRepository.buildIntent(suggestion.item).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                try {
+                    val intent = quickSearchRepository.buildIntent(suggestion.item).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    val fallback = Intent(context, SearchActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(fallback)
                 }
-                context.startActivity(intent)
             }
         }
     }

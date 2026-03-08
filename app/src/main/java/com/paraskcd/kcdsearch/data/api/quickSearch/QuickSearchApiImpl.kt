@@ -15,16 +15,17 @@ class QuickSearchApiImpl @Inject constructor(
         val subtitle: String
     )
 
-    private val searchDefs = listOf(
+    private val youtubePackages = listOf(
+        "com.morphe.android.youtube",
+        "app.revanced.android.youtube",
+        "com.google.android.youtube"
+    )
+
+    private val fixedDefs = listOf(
         SearchDef(
             packageName = "com.google.android.googlequicksearchbox",
             titleBuilder = { q -> "Search \"$q\" on Google" },
             subtitle = "Google"
-        ),
-        SearchDef(
-            packageName = "com.google.android.youtube",
-            titleBuilder = { q -> "Search \"$q\" on YouTube" },
-            subtitle = "YouTube"
         ),
         SearchDef(
             packageName = "com.android.vending",
@@ -41,9 +42,25 @@ class QuickSearchApiImpl @Inject constructor(
     override fun getSearchActions(query: String): List<QuickSearchResult> {
         if (query.isBlank()) return emptyList()
 
-        return searchDefs
+        val results = mutableListOf<QuickSearchResult>()
+
+        // YouTube — pick first installed variant
+        val ytPackage = youtubePackages.firstOrNull { isInstalled(it) }
+        if (ytPackage != null) {
+            results.add(
+                QuickSearchResult(
+                    query = query,
+                    title = "Search \"$query\" on YouTube",
+                    subtitle = "YouTube",
+                    packageName = ytPackage
+                )
+            )
+        }
+
+        // Fixed defs
+        fixedDefs
             .filter { isInstalled(it.packageName) }
-            .map { def ->
+            .mapTo(results) { def ->
                 QuickSearchResult(
                     query = query,
                     title = def.titleBuilder(query),
@@ -51,6 +68,8 @@ class QuickSearchApiImpl @Inject constructor(
                     packageName = def.packageName
                 )
             }
+
+        return results
     }
 
     override fun isInstalled(packageName: String): Boolean = try {

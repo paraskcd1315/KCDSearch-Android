@@ -76,10 +76,18 @@ class AssistViewModel @Inject constructor(
             }
             is SuggestionItem.SearchAction -> {
                 searchQueryService.setQuery(suggestion.item.query)
-                val intent = quickSearchRepository.buildIntent(suggestion.item).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                try {
+                    val intent = quickSearchRepository.buildIntent(suggestion.item).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                } catch (_: Exception) {
+                    // Fallback to KCD Search if the target app can't handle the intent
+                    val fallback = Intent(context, SearchActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(fallback)
                 }
-                context.startActivity(intent)
             }
         }
     }

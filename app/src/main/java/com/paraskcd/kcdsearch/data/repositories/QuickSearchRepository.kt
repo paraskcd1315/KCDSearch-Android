@@ -37,8 +37,10 @@ class QuickSearchRepository @Inject constructor(
                 putExtra(SearchManager.QUERY, result.query)
                 setPackage(result.packageName)
             }
-            "com.google.android.youtube" -> Intent(Intent.ACTION_VIEW).apply {
-                data = "https://www.youtube.com/results?search_query=${Uri.encode(result.query)}".toUri()
+            "com.morphe.android.youtube",
+            "app.revanced.android.youtube",
+            "com.google.android.youtube" -> Intent(Intent.ACTION_SEARCH).apply {
+                putExtra(SearchManager.QUERY, result.query)
                 setPackage(result.packageName)
             }
             "com.android.vending" -> Intent(Intent.ACTION_VIEW).apply {
