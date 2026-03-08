@@ -7,6 +7,8 @@ import com.paraskcd.kcdsearch.data.api.apps.InstalledAppsApi
 import com.paraskcd.kcdsearch.data.api.apps.InstalledAppsApiImpl
 import com.paraskcd.kcdsearch.data.api.contacts.ContactsApi
 import com.paraskcd.kcdsearch.data.api.contacts.ContactsApiImpl
+import com.paraskcd.kcdsearch.data.api.quickSearch.QuickSearchApi
+import com.paraskcd.kcdsearch.data.api.quickSearch.QuickSearchApiImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -29,6 +31,10 @@ object LocalApiModule {
     @Provides
     @Singleton
     fun provideContactsApi(impl: ContactsApiImpl): ContactsApi = impl
+
+    @Provides
+    @Singleton
+    fun provideQuickSearchApi(impl: QuickSearchApiImpl): QuickSearchApi = impl
 
     @Provides
     @Singleton

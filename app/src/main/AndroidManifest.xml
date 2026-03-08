@@ -31,7 +31,7 @@
                 tools:node="remove" />
         </provider>
         <activity
-            android:name=".ui.modules.home.HomeActivity"
+            android:name=".ui.activities.home.HomeActivity"
             android:exported="true"
             android:theme="@style/Theme.KCDSearch">
             <intent-filter>
@@ -40,11 +40,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.modules.search.SearchActivity"
+            android:name=".ui.activities.search.SearchActivity"
             android:exported="true"
             android:theme="@style/Theme.KCDSearch"/>
         <activity
-            android:name=".ui.modules.assist.AssistActivity"
+            android:name=".ui.activities.assist.AssistActivity"
             android:exported="true"
             android:theme="@style/Theme.KCDSearch.AssistSearch">
             <intent-filter>

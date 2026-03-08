@@ -11,14 +11,14 @@ import com.paraskcd.kcdsearch.data.dtos.ContactSearchRequestDto
 import com.paraskcd.kcdsearch.data.dtos.SearchRequestDto
 import com.paraskcd.kcdsearch.data.repositories.AppSearchRepository
 import com.paraskcd.kcdsearch.data.repositories.ContactSearchRepository
+import com.paraskcd.kcdsearch.data.repositories.QuickSearchRepository
 import com.paraskcd.kcdsearch.data.repositories.SearchHistoryRepository
 import com.paraskcd.kcdsearch.data.repositories.SearchRepository
 import com.paraskcd.kcdsearch.model.SuggestionItem
 import com.paraskcd.kcdsearch.model.UnifiedSearchResult
-import com.paraskcd.kcdsearch.ui.modules.search.enums.SearchCategory
+import com.paraskcd.kcdsearch.ui.activities.search.enums.SearchCategory
 import com.paraskcd.kcdsearch.utils.extensionMethods.toApiString
 import com.paraskcd.kcdsearch.utils.globalMethods.withLoading
-import com.paraskcd.kcdsearch.utils.globalMethods.withLoadingResult
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -36,7 +36,8 @@ class SearchService @Inject constructor(
     private val searchRepository: SearchRepository,
     private val appSearchRepository: AppSearchRepository,
     private val contactSearchRepository: ContactSearchRepository,
-    private val searchHistoryRepository: SearchHistoryRepository
+    private val searchHistoryRepository: SearchHistoryRepository,
+    private val quickSearchRepository: QuickSearchRepository
 ) {
     private val _webResults = MutableStateFlow<List<SearchResult>>(emptyList())
     private val _appResults = MutableStateFlow<List<AppResult>>(emptyList())
@@ -89,6 +90,7 @@ class SearchService @Inject constructor(
     fun requestSuggestionsDebounced(scope: CoroutineScope) {
         clearSuggestions()
         suggestionsJob?.cancel()
+        _isAutocompleteLoading.value = true
         suggestionsJob = scope.launch {
             delay(500)
             getAutocompleteSuggestions()
@@ -97,6 +99,7 @@ class SearchService @Inject constructor(
 
     fun requestSuggestionsImmediate(scope: CoroutineScope) {
         suggestionsJob?.cancel()
+        _isAutocompleteLoading.value = false
         scope.launch {
             getAutocompleteSuggestions()
         }
@@ -180,7 +183,9 @@ class SearchService @Inject constructor(
         if (query.length <= 2) {
             withLoading(_isAutocompleteLoading, _autocompleteErrors) {
                 val appMatches = appSearchRepository.search(AppSearchRequestDto(query = query, category = null))
-                _suggestions.value = appMatches.take(5).map { SuggestionItem.App(it) }
+                val searchActions = quickSearchRepository.search(query)
+                _suggestions.value = appMatches.take(5).map { SuggestionItem.App(it) } +
+                        searchActions.map { SuggestionItem.SearchAction(it) }
             }
             return
         }
@@ -189,10 +194,13 @@ class SearchService @Inject constructor(
             var appItems = emptyList<SuggestionItem.App>()
             var apiItems = emptyList<SuggestionItem.Text>()
             var contactItems = emptyList<SuggestionItem.Contact>()
+            val searchActions = quickSearchRepository.search(query)
+                .map { SuggestionItem.SearchAction(it) }
 
             fun publishSuggestions() {
-                _suggestions.value = appItems + contactItems + apiItems
+                _suggestions.value = appItems + contactItems + apiItems + searchActions
             }
+
 
             coroutineScope {
                 launch {

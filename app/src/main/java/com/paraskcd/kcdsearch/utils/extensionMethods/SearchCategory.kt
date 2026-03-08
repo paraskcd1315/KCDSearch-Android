@@ -1,6 +1,6 @@
 package com.paraskcd.kcdsearch.utils.extensionMethods
 
-import com.paraskcd.kcdsearch.ui.modules.search.enums.SearchCategory
+import com.paraskcd.kcdsearch.ui.activities.search.enums.SearchCategory
 
 fun SearchCategory.toApiString(): String = when (this) {
     SearchCategory.General -> "general"

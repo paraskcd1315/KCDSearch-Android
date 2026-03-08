@@ -2,29 +2,28 @@ package com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.composables.icons.heroicons.Heroicons
+import com.composables.icons.heroicons.outline.ArrowTopRightOnSquare
 import com.composables.icons.heroicons.outline.Clock
 import com.composables.icons.heroicons.outline.MagnifyingGlass
 import com.composables.icons.heroicons.outline.User
 import com.paraskcd.kcdsearch.model.SuggestionItem
+import com.paraskcd.kcdsearch.ui.shared.components.iconCircle.IconCircle
+import com.paraskcd.kcdsearch.ui.shared.components.iconCircle.IconCircleParams
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.suggestionSkeletonItem.SuggestionSkeletonItem
 import com.paraskcd.kcdsearch.ui.shared.components.unifiedSearchBar.components.suggestionSkeletonItem.SuggestionSkeletonItemParams
 import com.paraskcd.kcdsearch.utils.extensionMethods.segmentedListItems
@@ -46,6 +45,7 @@ fun AutocompleteSuggestions(
                     is SuggestionItem.Text -> "text_${index}_${suggestion.value}"
                     is SuggestionItem.App -> "app__${index}_${suggestion.item.packageName}"
                     is SuggestionItem.Contact -> "contact__${index}_${suggestion.item.name}_${suggestion.item.number}"
+                    is SuggestionItem.SearchAction -> "search_action_${index}_${suggestion.item.packageName}"
                 }
             }
         ) { _, suggestion, _, _ ->
@@ -54,18 +54,12 @@ fun AutocompleteSuggestions(
                     headlineContent = { Text(suggestion.value) },
                     colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
                     leadingContent = {
-                        Surface(
-                            modifier = Modifier.size(40.dp),
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceContainerHigh
-                        ) {
-                            Icon(
-                                imageVector = if (params.isHistory)
-                                    Heroicons.Outline.Clock else Heroicons.Outline.MagnifyingGlass,
-                                contentDescription = null,
-                                modifier = Modifier.padding(8.dp)
+                        IconCircle(
+                            IconCircleParams(
+                                icon = if (params.isHistory) Heroicons.Outline.Clock
+                                else Heroicons.Outline.MagnifyingGlass
                             )
-                        }
+                        )
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -96,19 +90,35 @@ fun AutocompleteSuggestions(
                         headlineContent = { Text(suggestion.item.name) },
                         supportingContent = { Text(suggestion.item.number) },
                         leadingContent = {
-                            Surface(
-                                modifier = Modifier.size(40.dp),
-                                shape = CircleShape,
-                                color = MaterialTheme.colorScheme.surfaceContainerHigh
-                            ) {
-                                Icon(
-                                    imageVector = Heroicons.Outline.User,
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(8.dp)
+                            IconCircle(
+                                IconCircleParams(Heroicons.Outline.User)
+                            )
+                        },
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { params.onSuggestionClick(suggestion) }
+                    )
+                }
+                is SuggestionItem.SearchAction -> {
+                    val icon = params.getAppIcon(suggestion.item.packageName)
+                    ListItem(
+                        headlineContent = { Text(suggestion.item.title) },
+                        supportingContent = { Text(suggestion.item.subtitle) },
+                        leadingContent = {
+                            if (icon != null) {
+                                Image(
+                                    bitmap = icon,
+                                    contentDescription = suggestion.item.subtitle,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            } else {
+                                IconCircle(
+                                    IconCircleParams(Heroicons.Outline.ArrowTopRightOnSquare)
                                 )
                             }
                         },
-                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { params.onSuggestionClick(suggestion) }
