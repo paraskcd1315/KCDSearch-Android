@@ -233,7 +233,7 @@ class SearchService @Inject constructor(
         searchQueryService.clearQuery()
         _category.value = SearchCategory.General
         resetPagination()
-        requestSuggestionsDebounced(scope)
+        requestSuggestionsImmediate(scope)
     }
 
     fun clearSuggestions() {
